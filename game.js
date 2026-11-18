@@ -1,4 +1,11 @@
 /* ==========================================================================
+   GLOBAL ERROR TRAP (แสดงแจ้งเตือนหากมีปัญหา)
+   ========================================================================== */
+window.onerror = function (msg, url, line) {
+  console.error('Game Error:', msg, 'at line', line);
+};
+
+/* ==========================================================================
    1. SOUND & BACKGROUND MUSIC ENGINE (Web Audio API Synthesizer)
    ========================================================================== */
 const SoundEngine = {
@@ -7,26 +14,39 @@ const SoundEngine = {
   bgmInterval: null,
   bgmStep: 0,
   init() {
-    if (!this.ctx) {
-      this.ctx = new (window.AudioContext || window.webkitAudioContext)();
+    try {
+      if (!this.ctx) {
+        const AudioCtx = window.AudioContext || window.webkitAudioContext;
+        if (AudioCtx) this.ctx = new AudioCtx();
+      }
+      if (this.ctx && this.ctx.state === 'suspended') {
+        this.ctx.resume();
+      }
+      this.startBGM();
+    } catch (e) {
+      console.warn('Audio init skipped:', e);
     }
-    if (this.ctx.state === 'suspended') this.ctx.resume();
-    this.startBGM();
   },
   playTone(freq, type, duration, vol = 0.15, delay = 0) {
     if (!this.enabled) return;
-    if (!this.ctx) this.ctx = new (window.AudioContext || window.webkitAudioContext)();
-    if (this.ctx.state === 'suspended') this.ctx.resume();
-    const osc = this.ctx.createOscillator();
-    const gain = this.ctx.createGain();
-    osc.type = type;
-    osc.frequency.setValueAtTime(freq, this.ctx.currentTime + delay);
-    gain.gain.setValueAtTime(vol, this.ctx.currentTime + delay);
-    gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + delay + duration);
-    osc.connect(gain);
-    gain.connect(this.ctx.destination);
-    osc.start(this.ctx.currentTime + delay);
-    osc.stop(this.ctx.currentTime + delay + duration);
+    try {
+      if (!this.ctx) {
+        const AudioCtx = window.AudioContext || window.webkitAudioContext;
+        if (AudioCtx) this.ctx = new AudioCtx();
+      }
+      if (!this.ctx) return;
+      if (this.ctx.state === 'suspended') this.ctx.resume();
+      const osc = this.ctx.createOscillator();
+      const gain = this.ctx.createGain();
+      osc.type = type;
+      osc.frequency.setValueAtTime(freq, this.ctx.currentTime + delay);
+      gain.gain.setValueAtTime(vol, this.ctx.currentTime + delay);
+      gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + delay + duration);
+      osc.connect(gain);
+      gain.connect(this.ctx.destination);
+      osc.start(this.ctx.currentTime + delay);
+      osc.stop(this.ctx.currentTime + delay + duration);
+    } catch (e) {}
   },
   startBGM() {
     if (this.bgmInterval) return;
@@ -39,9 +59,9 @@ const SoundEngine = {
     this.bgmInterval = setInterval(() => {
       if (!this.enabled || !this.ctx || this.ctx.state !== 'running') return;
       const freq = notes[this.bgmStep % notes.length];
-      this.playTone(freq, 'sine', 0.28, 0.032, 0);
+      this.playTone(freq, 'sine', 0.28, 0.03, 0);
       if (this.bgmStep % 2 === 0) {
-        this.playTone(freq * 0.5, 'triangle', 0.35, 0.025, 0);
+        this.playTone(freq * 0.5, 'triangle', 0.35, 0.022, 0);
       }
       this.bgmStep++;
     }, 340);
@@ -73,12 +93,14 @@ const SoundEngine = {
 function toggleSound() {
   SoundEngine.enabled = !SoundEngine.enabled;
   if (SoundEngine.enabled) SoundEngine.init();
-  document.getElementById('btn-sound').textContent = SoundEngine.enabled ? '🔊' : '🔇';
+  const btn = document.getElementById('btn-sound');
+  if (btn) btn.textContent = SoundEngine.enabled ? '🔊' : '🔇';
   showToast(SoundEngine.enabled ? 'เปิดเสียงและดนตรีคลอแล้ว 🎵' : 'ปิดเสียงประกอบแล้ว');
 }
 
 function showToast(msg, isError = false) {
   const t = document.getElementById('toast');
+  if (!t) return;
   t.textContent = msg;
   t.style.background = isError
     ? 'linear-gradient(135deg, #ef4444, #b91c1c)'
@@ -545,8 +567,8 @@ const MISSIONS = [
 /* ==========================================================================
    4. PLAYER STATE, SHARED SERVER SYNC & LEADERBOARD
    ========================================================================== */
-const STORAGE_KEY = '5w1h_detective_save_v5';
-const SERVER_CHANNEL_NAME = '5w1h_school_shared_server_v3';
+const STORAGE_KEY = '5w1h_detective_save_v6';
+const SERVER_CHANNEL_NAME = '5w1h_school_shared_server_v4';
 
 let gameState = {
   player: {
@@ -635,7 +657,7 @@ function getRankedPlayersList() {
     });
   }
 
-  entries.forEach(e => e.total = e.s1 + e.s2 + e.s3);
+  entries.forEach(e => { e.total = e.s1 + e.s2 + e.s3; });
   entries.sort((a, b) => b.total - a.total);
   return entries;
 }
@@ -769,7 +791,7 @@ function sendChatMessage() {
 }
 
 /* ==========================================================================
-   6. THREE.JS 3D CHARACTER, VEHICLES, HAIRSTYLES (FIXED PIGTAILS!) & HEADGEAR
+   6. THREE.JS 3D CHARACTER, VEHICLES, HAIRSTYLES & HEADGEAR BUILDER
    ========================================================================== */
 function buildDetectiveCharacterMesh(appearance) {
   const app = { ...DEFAULT_APPEARANCE, ...(appearance || {}) };
@@ -998,7 +1020,7 @@ function buildDetectiveCharacterMesh(appearance) {
   rightEye.position.set(0.17, 0.06, 0.38);
   headGroup.add(leftEye, rightEye);
 
-  // Hairstyles (14 Stylish Options + Fixed Cute Pigtails!)
+  // Hairstyles (14 Stylish Options + Fixed Cute Pigtails)
   const hairGroup = new THREE.Group();
   const topHair = new THREE.Mesh(new THREE.BoxGeometry(0.82, 0.24, 0.82), hairMat);
   topHair.position.y = 0.36;
@@ -1029,23 +1051,19 @@ function buildDetectiveCharacterMesh(appearance) {
     afroMain.position.set(0, 0.32, -0.06);
     hairGroup.add(afroMain);
   } else if (app.hairStyle === 'pigtails') {
-    // Fixed Cute Fluffy Pigtails with Hair Ties & Bangs
     const frontBangs = new THREE.Mesh(new THREE.BoxGeometry(0.76, 0.15, 0.12), hairMat);
     frontBangs.position.set(0, 0.28, 0.38);
     hairGroup.add(frontBangs);
 
     const tieMat = new THREE.MeshStandardMaterial({ color: 0xf43f5e, roughness: 0.4 });
     [-1, 1].forEach(side => {
-      // Hair tie ring on side of head
       const tie = new THREE.Mesh(new THREE.TorusGeometry(0.1, 0.045, 8, 14), tieMat);
       tie.position.set(side * 0.44, 0.22, -0.05);
       tie.rotation.y = Math.PI / 2;
 
-      // Fluffy upper puff
       const puffTop = new THREE.Mesh(new THREE.SphereGeometry(0.22, 12, 12), hairMat);
       puffTop.position.set(side * 0.56, 0.14, -0.08);
 
-      // Fluffy lower puff
       const puffBottom = new THREE.Mesh(new THREE.SphereGeometry(0.18, 12, 12), hairMat);
       puffBottom.position.set(side * 0.64, -0.1, -0.1);
 
@@ -1123,7 +1141,7 @@ function buildDetectiveCharacterMesh(appearance) {
     headGroup.add(bridge);
   }
 
-  // Hats & Head Props (7 Options!)
+  // Hats & Head Props (7 Options)
   if (app.hat === 'detective') {
     const hatMat = new THREE.MeshStandardMaterial({ color: 0x78350f });
     const brim = new THREE.Mesh(new THREE.CylinderGeometry(0.64, 0.64, 0.07, 16), hatMat);
@@ -1204,7 +1222,7 @@ function initPreview3D() {
   if (!canvas || previewRenderer) return;
 
   previewScene = new THREE.Scene();
-  previewCamera = new THREE.PerspectiveCamera(40, canvas.clientWidth / canvas.clientHeight, 0.1, 50);
+  previewCamera = new THREE.PerspectiveCamera(40, 240 / 290, 0.1, 50);
   previewCamera.position.set(0, 1.65, 4.6);
   previewCamera.lookAt(0, 1.35, 0);
 
@@ -1355,13 +1373,6 @@ function closeVehicleModal() {
   }
 }
 
-function cycleVehicle() {
-  const list = APPEARANCE_OPTIONS.vehicles;
-  const idx = list.findIndex(v => v.id === gameState.player.appearance.vehicle);
-  const next = list[(idx + 1) % list.length];
-  selectVehicleFromGarage(next.id);
-}
-
 function updateVehicleButtonUI() {
   const v = APPEARANCE_OPTIONS.vehicles.find(item => item.id === gameState.player.appearance.vehicle) || APPEARANCE_OPTIONS.vehicles[0];
   const btn = document.getElementById('btn-vehicle');
@@ -1408,7 +1419,7 @@ function initPodiumModal3D() {
   if (!canvas || podiumRenderer) return;
 
   podiumScene = new THREE.Scene();
-  podiumCamera = new THREE.PerspectiveCamera(42, canvas.clientWidth / canvas.clientHeight, 0.1, 60);
+  podiumCamera = new THREE.PerspectiveCamera(42, (canvas.clientWidth || 700) / 250, 0.1, 60);
   podiumCamera.position.set(0, 3.2, 8.6);
   podiumCamera.lookAt(0, 1.9, 0);
 
@@ -1545,6 +1556,10 @@ const keys = {};
 let joyVec = { x: 0, y: 0 };
 
 function init3DWorld() {
+  if (typeof THREE === 'undefined') {
+    showToast('ไม่สามารถโหลดไลบรารี 3D ได้ กรุณาตรวจสอบอินเทอร์เน็ต', true);
+    return;
+  }
   const canvas = document.getElementById('game-canvas');
   scene = new THREE.Scene();
   scene.background = new THREE.Color(0x7dd3fc);
@@ -1795,15 +1810,14 @@ function rebuildSelfPlayerMesh() {
 }
 
 /* ==========================================================================
-   10. EMOTES SYSTEM (FIXED REAL-TIME DURATION & EXPRESSIVE POSES)
+   10. EMOTES SYSTEM
    ========================================================================== */
 function triggerEmote(type) {
   SoundEngine.init();
-  currentEmote = { type, endTime: performance.now() + 4500 }; // Active for 4.5 seconds!
+  currentEmote = { type, endTime: performance.now() + 4500 };
   SoundEngine.playTone(540, 'sine', 0.12, 0.14);
   broadcastPlayerState();
 
-  // Highlight active button
   document.querySelectorAll('.emote-btn').forEach(btn => {
     btn.classList.toggle('active-emote', btn.dataset.emote === type);
   });
@@ -2046,7 +2060,7 @@ function renderQuizQuestion() {
   const optsEl = document.getElementById('quiz-options-container');
   const letters = ['ก.', 'ข.', 'ค.', 'ง.'];
   optsEl.innerHTML = qObj.options.map((optText, idx) => `
-    <button class="option-btn" onclick="selectQuizOption(${idx})">
+    <button type="button" class="option-btn" onclick="selectQuizOption(${idx})">
       <strong style="color:#38bdf8">${letters[idx]}</strong> <span>${optText}</span>
     </button>
   `).join('');
@@ -2173,7 +2187,8 @@ function hideAllScreens() {
 function showScreen(id) {
   document.querySelectorAll('.screen-overlay').forEach(el => el.classList.add('hidden'));
   document.getElementById('hud').style.display = 'none';
-  document.getElementById(id).classList.remove('hidden');
+  const target = document.getElementById(id);
+  if (target) target.classList.remove('hidden');
 }
 
 function goToRegister() {
@@ -2201,7 +2216,7 @@ function submitRegistration() {
 }
 
 function openMissionSelect() {
-  document.getElementById('select-player-label').textContent = `${gameState.player.name} (${gameState.player.no})`;
+  document.getElementById('select-player-label').textContent = `${gameState.player.name || 'นักสืบ'} (${gameState.player.no || '-'})`;
   document.getElementById('select-total-score').textContent = `${getTotalScore()} คะแนน`;
 
   const container = document.getElementById('mission-cards-container');
@@ -2227,8 +2242,8 @@ function openMissionSelect() {
             คะแนนสูงสุด: ${score} / 630
           </div>
           ${unlocked
-            ? `<button class="btn btn-primary btn-sm" style="width:100%;" onclick="startMission(${m.id})">${score > 0 ? '🔄 เล่นอีกครั้ง' : '🚀 เริ่มภารกิจ'}</button>`
-            : `<button class="btn btn-secondary btn-sm" style="width:100%;" disabled>🔒 ผ่านภารกิจก่อนหน้าเพื่อปลดล็อก</button>`
+            ? `<button type="button" class="btn btn-primary btn-sm" style="width:100%;" onclick="startMission(${m.id})">${score > 0 ? '🔄 เล่นอีกครั้ง' : '🚀 เริ่มภารกิจ'}</button>`
+            : `<button type="button" class="btn btn-secondary btn-sm" style="width:100%;" disabled>🔒 ผ่านภารกิจก่อนหน้าเพื่อปลดล็อก</button>`
           }
         </div>
       </div>
@@ -2263,7 +2278,7 @@ function toggleOnlineModal() {
 
   const listEl = document.getElementById('online-players-list');
   const all = [
-    { name: `${gameState.player.name} (คุณ)`, no: gameState.player.no, score: getTotalScore() },
+    { name: `${gameState.player.name || 'นักสืบ'} (คุณ)`, no: gameState.player.no || '-', score: getTotalScore() },
     ...Object.values(onlinePlayers).map(p => ({
       name: p.name,
       no: p.no,
@@ -2407,6 +2422,7 @@ function setupControls() {
   });
 
   window.addEventListener('resize', () => {
+    if (!camera || !renderer) return;
     camera.aspect = window.innerWidth / window.innerHeight;
     camera.updateProjectionMatrix();
     renderer.setSize(window.innerWidth, window.innerHeight);
@@ -2505,4 +2521,242 @@ function updateRemotePlayersAndBots(dt, time) {
     } else {
       entry.walkPhase += dt * 8;
       const { bodyGroup, leftLeg, rightLeg, leftArm, rightArm } = entry.mesh.userData;
-      bodyGroup.rotation.set(0,
+      bodyGroup.rotation.set(0, 0, 0);
+      bodyGroup.position.y = entry.mesh.userData.rideHeight || 0;
+      if (p.appearance.vehicle === 'none') {
+        leftLeg.rotation.x = Math.sin(entry.walkPhase) * 0.45;
+        rightLeg.rotation.x = -Math.sin(entry.walkPhase) * 0.45;
+        leftArm.rotation.x = -Math.sin(entry.walkPhase) * 0.35;
+        rightArm.rotation.x = Math.sin(entry.walkPhase) * 0.35;
+      } else {
+        leftLeg.rotation.x = 0; rightLeg.rotation.x = 0;
+      }
+    }
+
+    const headPos = entry.mesh.position.clone().add(new THREE.Vector3(0, 3.05, 0));
+    headPos.project(camera);
+    if (headPos.z < 1) {
+      const sx = (headPos.x * 0.5 + 0.5) * window.innerWidth;
+      const sy = (-headPos.y * 0.5 + 0.5) * window.innerHeight;
+      entry.labelEl.style.left = `${sx}px`;
+      entry.labelEl.style.top = `${sy}px`;
+      entry.labelEl.style.display = 'flex';
+      const chatHtml = p.chat ? `<div class="chat-bubble-3d">${p.chat}</div>` : '';
+      entry.labelEl.innerHTML = `${chatHtml}<div class="name-tag-3d">${p.name} • ⭐${getTotalScore(p)}</div>`;
+    } else {
+      entry.labelEl.style.display = 'none';
+    }
+  });
+}
+
+/* ==========================================================================
+   16. MAIN ANIMATION LOOP
+   ========================================================================== */
+const clock = new THREE.Clock();
+
+function animateWorld() {
+  requestAnimationFrame(animateWorld);
+  const dt = Math.min(clock.getDelta(), 0.05);
+  const time = clock.getElapsedTime();
+
+  evidenceMeshes.forEach((item, idx) => {
+    if (!item.collected) {
+      item.orb.rotation.y += dt * 2.2;
+      item.orb.position.y = Math.sin(time * 3 + idx) * 0.22;
+    }
+  });
+
+  if (worldPodiumGroup) {
+    worldPodiumGroup.children.forEach(child => {
+      if (child.userData.isPodiumChamp) {
+        child.position.y = child.userData.baseY + Math.abs(Math.sin(time * 4 + child.userData.rank)) * 0.16;
+        child.rotation.y = Math.sin(time * 2 + child.userData.rank) * 0.35;
+      }
+    });
+  }
+
+  updateRemotePlayersAndBots(dt, time);
+
+  if (playerGroup && isPlayingInWorld()) {
+    let moveForward = 0;
+    let moveRight = 0;
+
+    if (keys['KeyW'] || keys['ArrowUp']) moveForward += 1;
+    if (keys['KeyS'] || keys['ArrowDown']) moveForward -= 1;
+    if (keys['KeyD'] || keys['ArrowRight']) moveRight += 1;
+    if (keys['KeyA'] || keys['ArrowLeft']) moveRight -= 1;
+
+    if (Math.abs(joyVec.x) > 0.08 || Math.abs(joyVec.y) > 0.08) {
+      moveRight += joyVec.x;
+      moveForward -= joyVec.y;
+    }
+
+    const vObj = APPEARANCE_OPTIONS.vehicles.find(v => v.id === gameState.player.appearance.vehicle) || APPEARANCE_OPTIONS.vehicles[0];
+    const currentSpeed = playerState.baseSpeed * vObj.speedMult;
+
+    const len = Math.hypot(moveForward, moveRight);
+    if (len > 0.01) {
+      if (currentEmote.type !== 'none') {
+        currentEmote = { type: 'none', endTime: 0 };
+        clearEmoteUI();
+      }
+      moveForward /= Math.max(1, len);
+      moveRight /= Math.max(1, len);
+
+      const sinY = Math.sin(camYaw);
+      const cosY = Math.cos(camYaw);
+      const worldX = moveRight * cosY - moveForward * sinY;
+      const worldZ = -moveRight * sinY - moveForward * cosY;
+
+      const stepX = worldX * currentSpeed * dt;
+      const stepZ = worldZ * currentSpeed * dt;
+
+      if (!checkCollision(playerGroup.position.x + stepX, playerGroup.position.z)) {
+        playerGroup.position.x += stepX;
+      }
+      if (!checkCollision(playerGroup.position.x, playerGroup.position.z + stepZ)) {
+        playerGroup.position.z += stepZ;
+      }
+
+      const targetAngle = Math.atan2(worldX, worldZ);
+      let diff = targetAngle - playerGroup.rotation.y;
+      while (diff < -Math.PI) diff += Math.PI * 2;
+      while (diff > Math.PI) diff -= Math.PI * 2;
+      playerGroup.rotation.y += diff * 0.22;
+
+      const { bodyGroup, leftLeg, rightLeg, leftArm, rightArm, headGroup, rideHeight } = playerGroup.userData;
+      bodyGroup.rotation.set(0, 0, 0);
+      bodyGroup.position.y = rideHeight || 0;
+      leftArm.rotation.z = 0;
+      rightArm.rotation.z = 0;
+      if (headGroup) headGroup.rotation.set(0, 0, 0);
+
+      if (gameState.player.appearance.vehicle === 'none') {
+        playerState.walkCycle += dt * 12;
+        leftLeg.rotation.x = Math.sin(playerState.walkCycle) * 0.6;
+        rightLeg.rotation.x = -Math.sin(playerState.walkCycle) * 0.6;
+        leftArm.rotation.x = -Math.sin(playerState.walkCycle) * 0.5;
+        rightArm.rotation.x = Math.sin(playerState.walkCycle) * 0.5;
+      } else {
+        leftLeg.rotation.x = 0.15;
+        rightLeg.rotation.x = -0.15;
+        leftArm.rotation.z = 0.25;
+        rightArm.rotation.z = -0.25;
+        bodyGroup.position.y = (rideHeight || 0) + Math.sin(time * 8) * 0.04;
+      }
+    } else if (currentEmote.type !== 'none' && performance.now() < currentEmote.endTime) {
+      applyEmoteAnimation(playerGroup, currentEmote.type, time);
+    } else {
+      if (currentEmote.type !== 'none') {
+        currentEmote = { type: 'none', endTime: 0 };
+        clearEmoteUI();
+      }
+      const { bodyGroup, leftLeg, rightLeg, leftArm, rightArm, headGroup, rideHeight } = playerGroup.userData;
+      bodyGroup.rotation.set(0, 0, 0);
+      bodyGroup.position.y = rideHeight || 0;
+      if (headGroup) headGroup.rotation.set(0, 0, 0);
+      leftLeg.rotation.x *= 0.8;
+      rightLeg.rotation.x *= 0.8;
+      leftArm.rotation.x *= 0.8;
+      rightArm.rotation.x *= 0.8;
+      leftArm.rotation.z *= 0.8;
+      rightArm.rotation.z *= 0.8;
+    }
+
+    playerState.velY += playerState.gravity * dt;
+    playerGroup.position.y += playerState.velY * dt;
+    if (playerGroup.position.y <= 0) {
+      playerGroup.position.y = 0;
+      playerState.velY = 0;
+      playerState.onGround = true;
+    }
+
+    let closest = null;
+    let closestDist = 3.4;
+    evidenceMeshes.forEach(item => {
+      if (!item.collected) {
+        const d = playerGroup.position.distanceTo(item.group.position);
+        if (d < closestDist) {
+          closestDist = d;
+          closest = item;
+        }
+      }
+    });
+
+    const promptEl = document.getElementById('interact-prompt');
+    if (closest) {
+      activeEvidenceTarget = closest;
+      document.getElementById('interact-label').textContent = `สำรวจ: ${closest.data.title}`;
+      promptEl.style.display = 'flex';
+    } else {
+      activeEvidenceTarget = null;
+      promptEl.style.display = 'none';
+    }
+
+    updateHUD();
+  }
+
+  // Self Nameplate
+  if (playerGroup && gameState.player.name) {
+    ensureSelfNameplate();
+    if (selfChatTimer > 0) {
+      selfChatTimer--;
+      if (selfChatTimer === 0) selfChatText = '';
+    }
+    const selfHead = playerGroup.position.clone().add(new THREE.Vector3(0, 3.1, 0));
+    selfHead.project(camera);
+    if (selfHead.z < 1 && isPlayingInWorld()) {
+      const sx = (selfHead.x * 0.5 + 0.5) * window.innerWidth;
+      const sy = (-selfHead.y * 0.5 + 0.5) * window.innerHeight;
+      selfNameplateEl.style.left = `${sx}px`;
+      selfNameplateEl.style.top = `${sy}px`;
+      selfNameplateEl.style.display = 'flex';
+      const chatHtml = selfChatText ? `<div class="chat-bubble-3d">${selfChatText}</div>` : '';
+      selfNameplateEl.innerHTML = `${chatHtml}<div class="name-tag-3d self">🕵️ ${gameState.player.name}</div>`;
+    } else {
+      selfNameplateEl.style.display = 'none';
+    }
+  }
+
+  // Third-Person Camera Follow
+  if (playerGroup) {
+    const targetPos = playerGroup.position.clone().add(new THREE.Vector3(0, 1.8, 0));
+    const camX = targetPos.x + camDist * Math.sin(camYaw) * Math.cos(camPitch);
+    const camY = targetPos.y + camDist * Math.sin(camPitch);
+    const camZ = targetPos.z + camDist * Math.cos(camYaw) * Math.cos(camPitch);
+
+    camera.position.lerp(new THREE.Vector3(camX, Math.max(1.2, camY), camZ), 0.16);
+    camera.lookAt(targetPos);
+  }
+
+  // Update 3D Building Labels
+  worldLabels.forEach(item => {
+    const projected = item.pos.clone().project(camera);
+    if (projected.z < 1) {
+      const x = (projected.x * 0.5 + 0.5) * window.innerWidth;
+      const y = (-projected.y * 0.5 + 0.5) * window.innerHeight;
+      item.el.style.left = `${x}px`;
+      item.el.style.top = `${y}px`;
+      item.el.style.opacity = '1';
+    } else {
+      item.el.style.opacity = '0';
+    }
+  });
+
+  renderer.render(scene, camera);
+}
+
+/* ==========================================================================
+   17. BOOTSTRAP ON PAGE LOAD
+   ========================================================================== */
+window.addEventListener('DOMContentLoaded', () => {
+  loadSaveData();
+  if (gameState.player.name) {
+    document.getElementById('input-name').value = gameState.player.name;
+    document.getElementById('input-no').value = gameState.player.no;
+  }
+  updateVehicleButtonUI();
+  initMultiplayerServer();
+  init3DWorld();
+  loadMissionInWorld(1);
+});
