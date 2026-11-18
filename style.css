@@ -77,7 +77,7 @@ body, html {
 }
 
 .name-tag-3d {
-  background: rgba(15, 23, 42, 0.84);
+  background: rgba(15, 23, 42, 0.82);
   color: #f8fafc;
   padding: 2px 10px;
   border-radius: 999px;
@@ -91,25 +91,6 @@ body, html {
 .name-tag-3d.self {
   border-color: #fbbf24;
   color: #fef08a;
-}
-
-.name-tag-3d.podium-1 {
-  background: linear-gradient(135deg, #b45309, #78350f);
-  border: 2px solid #fde047;
-  color: #fef08a;
-  font-size: 13px;
-}
-
-.name-tag-3d.podium-2 {
-  background: linear-gradient(135deg, #334155, #1e293b);
-  border: 2px solid #e2e8f0;
-  color: #f8fafc;
-}
-
-.name-tag-3d.podium-3 {
-  background: linear-gradient(135deg, #7c2d12, #431407);
-  border: 2px solid #fdba74;
-  color: #ffedd5;
 }
 
 /* ================= HUD ================= */
@@ -226,7 +207,7 @@ body, html {
 }
 
 .hud-btn {
-  background: rgba(30, 41, 59, 0.9);
+  background: rgba(30, 41, 59, 0.92);
   border: 2px solid rgba(56, 189, 248, 0.5);
   color: #f8fafc;
   border-radius: 12px;
@@ -246,86 +227,68 @@ body, html {
   transform: translateY(-2px);
 }
 
-.hud-btn.btn-gold {
-  background: linear-gradient(135deg, rgba(245, 158, 11, 0.9), rgba(217, 119, 6, 0.9));
-  border-color: #fde047;
+.btn-gold-outline {
+  border-color: #fbbf24;
+  color: #fef08a;
+}
+.btn-gold-outline:hover {
+  background: #d97706;
   color: #fff;
 }
 
-/* Emote & Vehicle Dock */
-.emote-dock {
+.btn-cyan-outline {
+  border-color: #34d399;
+  color: #a7f3d0;
+}
+.btn-cyan-outline:hover {
+  background: #059669;
+  color: #fff;
+}
+
+/* Emote Action Bar */
+.emote-bar {
   position: fixed;
-  bottom: 22px;
+  bottom: 24px;
   left: 50%;
   transform: translateX(-50%);
   display: flex;
-  gap: 8px;
-  background: rgba(15, 23, 42, 0.82);
-  backdrop-filter: blur(10px);
-  border: 1.5px solid rgba(56, 189, 248, 0.4);
-  padding: 7px 12px;
-  border-radius: 999px;
-  pointer-events: auto;
-  z-index: 16;
-  box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+  gap: 6px;
   flex-wrap: wrap;
   justify-content: center;
+  background: rgba(15, 23, 42, 0.88);
+  backdrop-filter: blur(8px);
+  padding: 7px 12px;
+  border-radius: 999px;
+  border: 2px solid rgba(168, 85, 247, 0.6);
+  pointer-events: auto;
+  z-index: 25;
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.45);
 }
 
 .emote-btn {
   background: rgba(30, 41, 59, 0.95);
-  border: 1.5px solid rgba(148, 163, 184, 0.35);
+  border: 1.5px solid rgba(255, 255, 255, 0.25);
   color: #f8fafc;
-  padding: 5px 12px;
-  border-radius: 999px;
   font-family: 'Kanit', sans-serif;
-  font-size: 13px;
+  font-size: 12.5px;
   font-weight: 600;
+  padding: 6px 12px;
+  border-radius: 999px;
   cursor: pointer;
   transition: all 0.15s;
 }
-
 .emote-btn:hover {
-  background: #0284c7;
-  border-color: #7dd3fc;
+  background: #8b5cf6;
+  border-color: #e9d5ff;
   transform: translateY(-2px);
 }
-
-.vehicle-toggle-btn {
-  background: linear-gradient(135deg, #7c3aed, #5b21b6);
-  border-color: #c084fc;
+.emote-btn.active-emote {
+  background: linear-gradient(135deg, #a855f7, #ec4899);
+  border-color: #fef08a;
+  color: #fff;
+  box-shadow: 0 0 12px rgba(236, 72, 153, 0.6);
 }
-
-/* Podium Cutscene Overlay Bar */
-#podium-overlay-bar {
-  position: fixed;
-  bottom: 28px;
-  left: 50%;
-  transform: translateX(-50%);
-  background: rgba(15, 23, 42, 0.92);
-  backdrop-filter: blur(12px);
-  border: 2px solid #fbbf24;
-  border-radius: 20px;
-  padding: 16px 26px;
-  text-align: center;
-  pointer-events: auto;
-  z-index: 25;
-  box-shadow: 0 12px 35px rgba(0, 0, 0, 0.6);
-  width: 90%;
-  max-width: 520px;
-}
-
-.podium-banner h3 {
-  color: #fde047;
-  font-size: 1.15rem;
-  margin-bottom: 4px;
-}
-
-.podium-banner p {
-  color: #cbd5e1;
-  font-size: 0.85rem;
-  margin-bottom: 12px;
-}
+.emote-btn:active { transform: scale(0.94); }
 
 /* Evidence Log Bar */
 .evidence-log-bar {
@@ -360,7 +323,7 @@ body, html {
 /* Interaction Prompt */
 #interact-prompt {
   position: fixed;
-  bottom: 135px;
+  bottom: 88px;
   left: 50%;
   transform: translateX(-50%);
   background: linear-gradient(135deg, #f59e0b, #d97706);
@@ -376,6 +339,7 @@ body, html {
   gap: 10px;
   pointer-events: auto;
   cursor: pointer;
+  z-index: 24;
   animation: bouncePulse 1.2s infinite;
 }
 
@@ -397,10 +361,10 @@ body, html {
 /* Mobile Controls */
 #mobile-controls {
   position: fixed;
-  bottom: 72px;
+  bottom: 20px;
   left: 0;
   width: 100%;
-  padding: 0 22px;
+  padding: 0 24px;
   display: flex;
   justify-content: space-between;
   align-items: flex-end;
@@ -409,8 +373,8 @@ body, html {
 }
 
 #joystick-zone {
-  width: 105px;
-  height: 105px;
+  width: 110px;
+  height: 110px;
   background: rgba(255, 255, 255, 0.14);
   border: 2px solid rgba(255, 255, 255, 0.35);
   border-radius: 50%;
@@ -421,8 +385,8 @@ body, html {
 }
 
 #joystick-stick {
-  width: 44px;
-  height: 44px;
+  width: 46px;
+  height: 46px;
   background: radial-gradient(circle at 30% 30%, #38bdf8, #0284c7);
   border: 2px solid #fff;
   border-radius: 50%;
@@ -447,7 +411,7 @@ body, html {
   color: #fff;
   font-family: 'Kanit', sans-serif;
   font-weight: 700;
-  font-size: 11px;
+  font-size: 11.5px;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -462,7 +426,7 @@ body, html {
 .mob-btn:active { transform: scale(0.92); }
 
 @media (min-width: 900px) {
-  #mobile-controls { opacity: 0.45; bottom: 20px; }
+  #mobile-controls { opacity: 0.55; }
   #mobile-controls:hover { opacity: 1; }
 }
 
@@ -486,7 +450,7 @@ body, html {
   background: linear-gradient(145deg, rgba(30, 41, 59, 0.96), rgba(15, 23, 42, 0.98));
   border: 2px solid rgba(56, 189, 248, 0.4);
   border-radius: 24px;
-  padding: 26px;
+  padding: 24px;
   width: 100%;
   max-width: 780px;
   max-height: 92vh;
@@ -536,7 +500,7 @@ body, html {
 .btn {
   font-family: 'Kanit', sans-serif;
   font-weight: 600;
-  font-size: 15px;
+  font-size: 14.5px;
   padding: 11px 20px;
   border-radius: 14px;
   border: none;
@@ -555,12 +519,13 @@ body, html {
 }
 .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 10px 25px rgba(234, 88, 12, 0.55); }
 
-.btn-gold-solid {
+.btn-gold {
   background: linear-gradient(135deg, #eab308, #ca8a04);
-  color: #fff;
-  box-shadow: 0 6px 20px rgba(202, 138, 4, 0.4);
+  color: #0f172a;
+  font-weight: 700;
+  box-shadow: 0 6px 20px rgba(234, 179, 8, 0.35);
 }
-.btn-gold-solid:hover { transform: translateY(-2px); }
+.btn-gold:hover { transform: translateY(-2px); }
 
 .btn-secondary {
   background: rgba(51, 65, 85, 0.9);
@@ -599,6 +564,33 @@ body, html {
   transition: border-color 0.2s;
 }
 .form-input:focus { border-color: #38bdf8; }
+
+/* Vehicle Garage Cards */
+.vehicle-cards-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+  gap: 12px;
+  margin-top: 10px;
+}
+
+.vehicle-card {
+  background: rgba(15, 23, 42, 0.85);
+  border: 2px solid rgba(148, 163, 184, 0.3);
+  border-radius: 16px;
+  padding: 16px 12px;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.vehicle-card:hover {
+  border-color: #38bdf8;
+  transform: translateY(-3px);
+}
+.vehicle-card.selected {
+  border-color: #34d399;
+  background: rgba(16, 185, 129, 0.18);
+  box-shadow: 0 0 18px rgba(52, 211, 153, 0.35);
+}
 
 /* Dressing Room */
 .wardrobe-layout {
@@ -641,7 +633,7 @@ body, html {
 .wardrobe-controls {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 14px;
   max-height: 56vh;
   overflow-y: auto;
   padding-right: 4px;
@@ -667,8 +659,8 @@ body, html {
 }
 
 .color-swatch {
-  width: 30px;
-  height: 30px;
+  width: 32px;
+  height: 32px;
   border-radius: 50%;
   border: 2px solid rgba(255,255,255,0.4);
   cursor: pointer;
@@ -683,16 +675,16 @@ body, html {
 .option-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
-  gap: 7px;
+  gap: 8px;
 }
 
 .opt-chip {
   background: rgba(30, 41, 59, 0.9);
   border: 1.5px solid rgba(148, 163, 184, 0.3);
   color: #e2e8f0;
-  padding: 7px 9px;
+  padding: 7px 10px;
   border-radius: 10px;
-  font-size: 12px;
+  font-size: 12.5px;
   font-weight: 500;
   cursor: pointer;
   text-align: center;
@@ -704,6 +696,61 @@ body, html {
   border-color: #38bdf8;
   color: #fff;
   font-weight: 600;
+}
+
+/* 3D Podium Showcase Modal */
+.podium-stage-wrapper {
+  background: radial-gradient(circle at 50% 25%, #1e3a8a, #0f172a 85%);
+  border: 2px solid rgba(251, 191, 36, 0.5);
+  border-radius: 18px;
+  padding: 10px;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+#podium-canvas {
+  width: 100%;
+  max-width: 720px;
+  height: 250px;
+  border-radius: 12px;
+}
+
+.podium-cards-overlay {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  width: 100%;
+  margin-top: 8px;
+}
+
+.podium-rank-card {
+  background: rgba(15, 23, 42, 0.85);
+  border-radius: 12px;
+  padding: 8px 10px;
+  text-align: center;
+  border: 1.5px solid rgba(255,255,255,0.15);
+}
+.podium-rank-card.rank-1 { border-color: #fbbf24; background: rgba(251, 191, 36, 0.14); }
+.podium-rank-card.rank-2 { border-color: #cbd5e1; }
+.podium-rank-card.rank-3 { border-color: #d97706; }
+
+/* Speed Bonus Pill in Quiz */
+.speed-bonus-pill {
+  display: inline-block;
+  background: rgba(16, 185, 129, 0.2);
+  border: 1px solid #34d399;
+  color: #6ee7b7;
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-size: 12.5px;
+  font-weight: 700;
+}
+.speed-bonus-pill.expired {
+  background: rgba(148, 163, 184, 0.15);
+  border-color: rgba(148, 163, 184, 0.4);
+  color: #94a3b8;
 }
 
 /* Mission Cards Grid */
@@ -772,37 +819,6 @@ body, html {
   flex-shrink: 0;
 }
 
-/* Speed Bonus Bar in Quiz */
-.speed-bonus-bar {
-  background: rgba(15, 23, 42, 0.75);
-  border: 1px solid rgba(250, 204, 21, 0.35);
-  border-radius: 12px;
-  padding: 8px 12px;
-  margin-bottom: 12px;
-  text-align: left;
-}
-
-.speed-bonus-header {
-  font-size: 12.5px;
-  font-weight: 600;
-  color: #fde047;
-  margin-bottom: 5px;
-}
-
-.speed-bar-bg {
-  width: 100%;
-  height: 7px;
-  background: rgba(255,255,255,0.12);
-  border-radius: 999px;
-  overflow: hidden;
-}
-
-.speed-bar-fill {
-  height: 100%;
-  background: linear-gradient(90deg, #ef4444, #f59e0b, #22c55e);
-  transition: width 0.1s linear;
-}
-
 /* 5W1H Quiz Modal */
 .w1h-tabs {
   display: flex;
@@ -846,7 +862,7 @@ body, html {
 }
 
 .question-text {
-  font-size: 16.5px;
+  font-size: 17px;
   font-weight: 600;
   margin-bottom: 14px;
   line-height: 1.5;
@@ -890,16 +906,15 @@ body, html {
 .leaderboard-table {
   width: 100%;
   border-collapse: collapse;
-  margin-top: 12px;
   font-size: 13.5px;
 }
 .leaderboard-table th, .leaderboard-table td {
-  padding: 9px 10px;
+  padding: 8px 10px;
   text-align: center;
   border-bottom: 1px solid rgba(255,255,255,0.1);
 }
-.leaderboard-table th { background: rgba(56, 189, 248, 0.15); color: #7dd3fc; font-weight: 600; }
-.leaderboard-table tr.current-player { background: rgba(245, 158, 11, 0.18); font-weight: 600; }
+.leaderboard-table th { background: rgba(56, 189, 248, 0.15); color: #7dd3fc; font-weight: 600; position: sticky; top: 0; }
+.leaderboard-table tr.current-player { background: rgba(245, 158, 11, 0.22); font-weight: 600; }
 
 /* Online Players & Chat */
 .online-list {
@@ -958,4 +973,4 @@ body, html {
 }
 
 .evidence-icon-large { font-size: 52px; margin-bottom: 8px; }
-.stars-display { font-size: 40px; margin: 10px 0; letter-spacing: 6px; }
+.stars-display { font-size: 40px; margin: 8px 0; letter-spacing: 6px; }
