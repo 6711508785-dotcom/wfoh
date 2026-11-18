@@ -1,17 +1,21 @@
 /* ==========================================================================
-   1. SOUND ENGINE (Web Audio API Synthesizer)
+   1. SOUND & BACKGROUND MUSIC ENGINE (Web Audio API Synthesizer)
    ========================================================================== */
 const SoundEngine = {
   ctx: null,
   enabled: true,
+  bgmInterval: null,
+  bgmStep: 0,
   init() {
     if (!this.ctx) {
       this.ctx = new (window.AudioContext || window.webkitAudioContext)();
     }
+    if (this.ctx.state === 'suspended') this.ctx.resume();
+    this.startBGM();
   },
   playTone(freq, type, duration, vol = 0.15, delay = 0) {
     if (!this.enabled) return;
-    this.init();
+    if (!this.ctx) this.ctx = new (window.AudioContext || window.webkitAudioContext)();
     if (this.ctx.state === 'suspended') this.ctx.resume();
     const osc = this.ctx.createOscillator();
     const gain = this.ctx.createGain();
@@ -23,6 +27,25 @@ const SoundEngine = {
     gain.connect(this.ctx.destination);
     osc.start(this.ctx.currentTime + delay);
     osc.stop(this.ctx.currentTime + delay + duration);
+  },
+  startBGM() {
+    if (this.bgmInterval) return;
+    // Cheerful Detective Adventure Melody Loop
+    const notes = [
+      261.63, 329.63, 392.00, 329.63,
+      293.66, 349.23, 440.00, 349.23,
+      329.63, 392.00, 523.25, 493.88,
+      392.00, 329.63, 293.66, 392.00
+    ];
+    this.bgmInterval = setInterval(() => {
+      if (!this.enabled || !this.ctx || this.ctx.state !== 'running') return;
+      const freq = notes[this.bgmStep % notes.length];
+      this.playTone(freq, 'sine', 0.28, 0.032, 0);
+      if (this.bgmStep % 2 === 0) {
+        this.playTone(freq * 0.5, 'triangle', 0.35, 0.025, 0);
+      }
+      this.bgmStep++;
+    }, 340);
   },
   collect() {
     this.playTone(587.33, 'sine', 0.15, 0.18, 0);
@@ -50,8 +73,9 @@ const SoundEngine = {
 
 function toggleSound() {
   SoundEngine.enabled = !SoundEngine.enabled;
+  if (SoundEngine.enabled) SoundEngine.init();
   document.getElementById('btn-sound').textContent = SoundEngine.enabled ? '🔊' : '🔇';
-  showToast(SoundEngine.enabled ? 'เปิดเสียงประกอบแล้ว' : 'ปิดเสียงประกอบแล้ว');
+  showToast(SoundEngine.enabled ? 'เปิดเสียงและดนตรีคลอแล้ว 🎵' : 'ปิดเสียงประกอบแล้ว');
 }
 
 function showToast(msg, isError = false) {
@@ -65,9 +89,15 @@ function showToast(msg, isError = false) {
 }
 
 /* ==========================================================================
-   2. CHARACTER APPEARANCE & CUSTOMIZATION DATA
+   2. CHARACTER APPEARANCE, HAIRSTYLES, HEADGEAR & VEHICLES
    ========================================================================== */
 const APPEARANCE_OPTIONS = {
+  vehicles: [
+    { id: 'none', label: '🚶 เดินเท้าปกติ', speedMult: 1.0 },
+    { id: 'skateboard', label: '🛹 สเก็ตบอร์ดสายฟ้า', speedMult: 1.45 },
+    { id: 'scooter', label: '🛴 สกู๊ตเตอร์ไฟฟ้า', speedMult: 1.6 },
+    { id: 'hoverboard', label: '🛸 โฮเวอร์บอร์ดลอยได้', speedMult: 1.75 }
+  ],
   skinTones: [
     { id: 's1', color: '#fde0c3', label: 'ผิวขาวอมชมพู' },
     { id: 's2', color: '#f5cba7', label: 'ผิวขาวเหลือง' },
@@ -85,7 +115,11 @@ const APPEARANCE_OPTIONS = {
     { id: 'mohawk', label: '🎸 โมฮอว์กพังก์' },
     { id: 'buns', label: '🥟 ซาลาเปาคู่' },
     { id: 'bowl', label: '🍄 ทรงกะลาครอบ' },
-    { id: 'saiyan', label: '🔥 ผมตั้งซูเปอร์ไซย่า' }
+    { id: 'saiyan', label: '🔥 ผมตั้งซูเปอร์ไซย่า' },
+    { id: 'odango', label: '🍡 ดังโงะมวยเดี่ยว' },
+    { id: 'twintails_long', label: '💫 ทวินเทลลอนยาว' },
+    { id: 'choppy_bangs', label: '✂️ หน้าม้าเต่อสุดชิค' },
+    { id: 'side_braid', label: '🌸 เปียเดี่ยวข้างไหล่' }
   ],
   hairColors: [
     { id: 'hc1', color: '#1e293b', label: 'ดำธรรมชาติ' },
@@ -113,14 +147,18 @@ const APPEARANCE_OPTIONS = {
     { id: 'cool', label: '😎 แว่นกันแดดเท่ๆ' }
   ],
   hats: [
-    { id: 'none', label: '❌ ไม่ใส่หมวก' },
+    { id: 'none', label: '❌ ไม่ใส่พร็อพ' },
     { id: 'detective', label: '🕵️ หมวกนักสืบ' },
     { id: 'cap_red', label: '🧢 หมวกแก๊ปแดง' },
-    { id: 'headset', label: '🎧 หูฟังเกมเมอร์' }
+    { id: 'headset', label: '🎧 หูฟังเกมเมอร์' },
+    { id: 'crown', label: '👑 มงกุฎทองคำ' },
+    { id: 'cat_ears', label: '🐱 หูแมวเหมียว' },
+    { id: 'alien_antenna', label: '🛸 เสาอากาศเอเลี่ยน' }
   ]
 };
 
 const DEFAULT_APPEARANCE = {
+  vehicle: 'none',
   skin: '#f5cba7',
   hairStyle: 'short',
   hairColor: '#1e293b',
@@ -407,7 +445,6 @@ const MISSIONS = [
       {
         id: 'm3_e3',
         title: 'คำให้การของ "ครูเอก" (ครูวิชาพลศึกษา)',
-        icon: ' Whistle',
         icon: '🏃',
         pos: { x: -10, y: 1.2, z: -24 },
         summary: 'ครูเอกให้ข้อมูลว่าช่วงฤดูฝน (เดือน ก.ค.-ก.ย.) หลังฝนตกหนัก 30 นาที น้ำจะท่วมขังนานกว่า 4 ชั่วโมงจนงดสอนภาคปฏิบัติ',
@@ -508,8 +545,8 @@ const MISSIONS = [
 /* ==========================================================================
    4. PLAYER STATE, SHARED SERVER SYNC & LEADERBOARD
    ========================================================================== */
-const STORAGE_KEY = '5w1h_detective_save_v3';
-const SERVER_CHANNEL_NAME = '5w1h_school_shared_server_v1';
+const STORAGE_KEY = '5w1h_detective_save_v4';
+const SERVER_CHANNEL_NAME = '5w1h_school_shared_server_v2';
 
 let gameState = {
   player: {
@@ -526,14 +563,17 @@ let gameState = {
   quizState: {
     step: 0,
     score: 0,
+    speedBonusTotal: 0,
+    questionStartTime: 0,
+    timerInterval: null,
     answered: false
   },
   lastScreenBeforeModal: 'screen-home'
 };
 
-// Shared Online Players Store (Simulated + Real Cross-Tab BroadcastChannel Server)
 let onlinePlayers = {};
 let serverChannel = null;
+let currentEmote = { type: 'none', timer: 0 };
 
 function loadSaveData() {
   try {
@@ -557,6 +597,7 @@ function saveProgress() {
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify({ player: gameState.player }));
     broadcastPlayerState();
+    rebuildWorldPodium();
   } catch (e) {
     console.warn('Could not save data', e);
   }
@@ -566,54 +607,85 @@ function getTotalScore(p = gameState.player) {
   return (p.scores[1] || 0) + (p.scores[2] || 0) + (p.scores[3] || 0);
 }
 
+function getRankedPlayersList() {
+  const entries = [];
+  Object.values(onlinePlayers).forEach(p => {
+    entries.push({
+      id: p.id,
+      name: p.name,
+      no: p.no,
+      appearance: p.appearance || DEFAULT_APPEARANCE,
+      s1: p.scores[1] || 0,
+      s2: p.scores[2] || 0,
+      s3: p.scores[3] || 0,
+      isSelf: false
+    });
+  });
+
+  if (gameState.player.name) {
+    entries.push({
+      id: gameState.player.id,
+      name: gameState.player.name,
+      no: gameState.player.no,
+      appearance: gameState.player.appearance,
+      s1: gameState.player.scores[1] || 0,
+      s2: gameState.player.scores[2] || 0,
+      s3: gameState.player.scores[3] || 0,
+      isSelf: true
+    });
+  }
+
+  entries.forEach(e => e.total = e.s1 + e.s2 + e.s3);
+  entries.sort((a, b) => b.total - a.total);
+  return entries;
+}
+
 /* ==========================================================================
-   5. REAL-TIME MULTIPLAYER SERVER ENGINE (BroadcastChannel + LocalStorage Sync + Classmates)
+   5. REAL-TIME MULTIPLAYER SERVER ENGINE
    ========================================================================== */
 const CLASSMATE_BOTS = [
   {
     id: 'bot_1',
     name: 'ด.ญ. พลอยใส',
     no: 'เลขที่ 4 ม.2/1',
-    appearance: { skin: '#fde0c3', hairStyle: 'pigtails', hairColor: '#ec4899', outfit: 'student_blue', glasses: 'round', hat: 'none' },
-    scores: { 1: 600, 2: 500, 3: 400 },
+    appearance: { vehicle: 'skateboard', skin: '#fde0c3', hairStyle: 'twintails_long', hairColor: '#ec4899', outfit: 'student_blue', glasses: 'round', hat: 'cat_ears' },
+    scores: { 1: 620, 2: 515, 3: 410 },
     x: -12, y: 0, z: 6, rotY: 0.5,
     waypoints: [{ x: -12, z: 6 }, { x: -24, z: 12 }, { x: -18, z: 18 }, { x: -5, z: 8 }],
-    wpIdx: 0, chat: 'ห้อง ม.2/1 มีเบาะแสตรงกระดานด้วยนะ!'
+    wpIdx: 0, chat: 'ตอบไวได้โบนัส +5 ด้วยนะ!'
   },
   {
     id: 'bot_2',
     name: 'ด.ช. ภูผา',
     no: 'เลขที่ 9 ม.2/1',
-    appearance: { skin: '#e0ac69', hairStyle: 'spiky', hairColor: '#ef4444', outfit: 'pe_red', glasses: 'cool', hat: 'cap_red' },
-    scores: { 1: 500, 2: 600, 3: 300 },
+    appearance: { vehicle: 'hoverboard', skin: '#e0ac69', hairStyle: 'spiky', hairColor: '#ef4444', outfit: 'pe_red', glasses: 'cool', hat: 'crown' },
+    scores: { 1: 510, 2: 625, 3: 320 },
     x: 15, y: 0, z: 8, rotY: -0.8,
     waypoints: [{ x: 15, z: 8 }, { x: 24, z: 15 }, { x: 28, z: 20 }, { x: 12, z: 12 }],
-    wpIdx: 0, chat: 'ขยะในโรงอาหารเยอะมากเลย ใครอยู่แถวนี้บ้าง?'
+    wpIdx: 0, chat: 'ดูแท่นรางวัลกลางลานเสาธงสิ!'
   },
   {
     id: 'bot_3',
     name: 'ด.ญ. น้ำหวาน',
     no: 'เลขที่ 18 ม.2/1',
-    appearance: { skin: '#f5cba7', hairStyle: 'buns', hairColor: '#38bdf8', outfit: 'dino_suit', glasses: 'none', hat: 'none' },
-    scores: { 1: 400, 2: 400, 3: 600 },
+    appearance: { vehicle: 'scooter', skin: '#f5cba7', hairStyle: 'odango', hairColor: '#38bdf8', outfit: 'dino_suit', glasses: 'none', hat: 'alien_antenna' },
+    scores: { 1: 415, 2: 420, 3: 615 },
     x: 2, y: 0, z: -15, rotY: 3.1,
     waypoints: [{ x: 2, z: -15 }, { x: -4, z: -26 }, { x: 8, z: -26 }, { x: 0, z: -12 }],
-    wpIdx: 0, chat: 'มาดูท่อระบายน้ำสนามกีฬาเร็ว!'
+    wpIdx: 0, chat: 'ชุดไดโนเสาร์ขี่สกู๊ตเตอร์อย่างซิ่ง!'
   }
 ];
 
 function initMultiplayerServer() {
-  // Initialize Classmate Bots in onlinePlayers
   CLASSMATE_BOTS.forEach(bot => {
     onlinePlayers[bot.id] = {
       ...bot,
       isBot: true,
-      lastSeen: Date.now(),
-      chatTimer: 120
+      emote: 'none',
+      lastSeen: Date.now()
     };
   });
 
-  // Setup BroadcastChannel for instant multi-tab / same-browser shared server
   if ('BroadcastChannel' in window) {
     serverChannel = new BroadcastChannel(SERVER_CHANNEL_NAME);
     serverChannel.onmessage = (event) => {
@@ -626,13 +698,13 @@ function initMultiplayerServer() {
           isBot: false,
           lastSeen: Date.now(),
           chat: msg.chat || (existing ? existing.chat : ''),
-          chatTimer: msg.chat ? 240 : (existing ? existing.chatTimer : 0)
+          emote: msg.emote || 'none'
         };
+        if (msg.scoreUpdated) rebuildWorldPodium();
       }
     };
   }
 
-  // Heartbeat broadcast every 150ms
   setInterval(() => {
     if (!gameState.player.name) return;
     broadcastPlayerState();
@@ -642,11 +714,13 @@ function initMultiplayerServer() {
 
 let pendingChatMsg = '';
 let selfChatTimer = 0;
+let selfChatText = '';
 
-function broadcastPlayerState() {
+function broadcastPlayerState(scoreUpdated = false) {
   if (!serverChannel || !gameState.player.name) return;
   serverChannel.postMessage({
     type: 'SYNC_PLAYER',
+    scoreUpdated,
     player: {
       id: gameState.player.id,
       name: gameState.player.name,
@@ -658,19 +732,21 @@ function broadcastPlayerState() {
       z: playerGroup ? playerGroup.position.z : 10,
       rotY: playerGroup ? playerGroup.rotation.y : 0
     },
-    chat: pendingChatMsg
+    chat: pendingChatMsg,
+    emote: currentEmote.type
   });
   pendingChatMsg = '';
 }
 
 function cleanupDisconnectedPlayers() {
   const now = Date.now();
-  let count = 1; // Self
+  let count = 1;
   Object.keys(onlinePlayers).forEach(id => {
     const p = onlinePlayers[id];
     if (!p.isBot && now - p.lastSeen > 4000) {
       delete onlinePlayers[id];
       removeRemotePlayerMesh(id);
+      rebuildWorldPodium();
     } else {
       count++;
     }
@@ -691,17 +767,72 @@ function sendChatMessage() {
   toggleOnlineModal();
   showToast('ส่งข้อความแชทแล้ว 💬');
 }
-let selfChatText = '';
 
 /* ==========================================================================
-   6. THREE.JS 3D CHARACTER BUILDER (Shared for World, Remote Players & Preview)
+   6. THREE.JS 3D CHARACTER, VEHICLES, HAIRSTYLES & HEADGEAR BUILDER
    ========================================================================== */
 function buildDetectiveCharacterMesh(appearance) {
   const app = { ...DEFAULT_APPEARANCE, ...(appearance || {}) };
-  const group = new THREE.Group();
+  const root = new THREE.Group();
+  const bodyGroup = new THREE.Group();
+  root.add(bodyGroup);
 
   const skinMat = new THREE.MeshStandardMaterial({ color: app.skin, roughness: 0.65 });
   const hairMat = new THREE.MeshStandardMaterial({ color: app.hairColor, roughness: 0.7 });
+
+  // Vehicle Mesh under feet
+  let rideHeight = 0;
+  if (app.vehicle === 'skateboard') {
+    rideHeight = 0.18;
+    const deck = new THREE.Mesh(
+      new THREE.BoxGeometry(0.68, 0.08, 1.65),
+      new THREE.MeshStandardMaterial({ color: 0xf97316, roughness: 0.4 })
+    );
+    deck.position.y = 0.12;
+    deck.castShadow = true;
+    const wheelMat = new THREE.MeshStandardMaterial({ color: 0x38bdf8 });
+    [[-0.28, 0.55], [0.28, 0.55], [-0.28, -0.55], [0.28, -0.55]].forEach(([wx, wz]) => {
+      const w = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.08, 0.1, 10), wheelMat);
+      w.rotation.z = Math.PI / 2;
+      w.position.set(wx, 0.08, wz);
+      root.add(w);
+    });
+    root.add(deck);
+  } else if (app.vehicle === 'scooter') {
+    rideHeight = 0.18;
+    const board = new THREE.Mesh(
+      new THREE.BoxGeometry(0.52, 0.08, 1.55),
+      new THREE.MeshStandardMaterial({ color: 0x10b981, roughness: 0.4 })
+    );
+    board.position.y = 0.12;
+    const stem = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.05, 0.05, 1.45, 8),
+      new THREE.MeshStandardMaterial({ color: 0xe2e8f0, metalness: 0.6 })
+    );
+    stem.position.set(0, 0.85, 0.65);
+    const handlebar = new THREE.Mesh(
+      new THREE.BoxGeometry(0.75, 0.07, 0.08),
+      new THREE.MeshStandardMaterial({ color: 0x0f172a })
+    );
+    handlebar.position.set(0, 1.55, 0.65);
+    root.add(board, stem, handlebar);
+  } else if (app.vehicle === 'hoverboard') {
+    rideHeight = 0.28;
+    const disc = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.75, 0.65, 0.14, 18),
+      new THREE.MeshStandardMaterial({ color: 0x8b5cf6, metalness: 0.5, roughness: 0.2 })
+    );
+    disc.position.y = 0.2;
+    const glowRing = new THREE.Mesh(
+      new THREE.TorusGeometry(0.72, 0.04, 8, 24),
+      new THREE.MeshBasicMaterial({ color: 0x38bdf8 })
+    );
+    glowRing.rotation.x = Math.PI / 2;
+    glowRing.position.y = 0.16;
+    root.add(disc, glowRing);
+  }
+
+  bodyGroup.position.y = rideHeight;
 
   // Outfit Palette & Special Costumes
   let shirtColor = 0xffffff;
@@ -748,17 +879,16 @@ function buildDetectiveCharacterMesh(appearance) {
   rightShoe.position.set(0, -0.32, 0.05);
   rightLeg.add(rightShoe);
 
-  group.add(leftLeg, rightLeg);
+  bodyGroup.add(leftLeg, rightLeg);
 
   // Torso
   const torso = new THREE.Mesh(new THREE.BoxGeometry(0.86, 0.96, 0.52), shirtMat);
   torso.position.y = 1.22;
   torso.castShadow = true;
-  group.add(torso);
+  bodyGroup.add(torso);
 
   // Outfit Specific Details
   if (app.outfit === 'pe_red') {
-    // White collar & sporty stripes for Red PE Uniform
     const collar = new THREE.Mesh(new THREE.BoxGeometry(0.55, 0.14, 0.55), accentMat);
     collar.position.set(0, 1.66, 0);
     const stripeL = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.75, 0.12), accentMat);
@@ -767,38 +897,35 @@ function buildDetectiveCharacterMesh(appearance) {
     const stripeR = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.75, 0.12), accentMat);
     stripeR.position.set(0.39, 0.38, 0);
     rightLeg.add(stripeR);
-    group.add(collar);
+    bodyGroup.add(collar);
   } else if (hasCoat) {
     const coatSkirt = new THREE.Mesh(new THREE.BoxGeometry(0.94, 0.5, 0.58), shirtMat);
     coatSkirt.position.y = 0.78;
     const scarf = new THREE.Mesh(new THREE.BoxGeometry(0.65, 0.18, 0.58), accentMat);
     scarf.position.y = 1.66;
-    group.add(coatSkirt, scarf);
+    bodyGroup.add(coatSkirt, scarf);
   } else if (app.outfit === 'dino_suit') {
-    // Dino belly, tail & back spikes
     const belly = new THREE.Mesh(new THREE.BoxGeometry(0.54, 0.76, 0.08), accentMat);
     belly.position.set(0, 1.2, 0.26);
     const tail = new THREE.Mesh(new THREE.ConeGeometry(0.28, 0.9, 6), shirtMat);
     tail.rotation.x = -Math.PI / 2.4;
     tail.position.set(0, 0.85, -0.55);
-    group.add(belly, tail);
+    bodyGroup.add(belly, tail);
     for (let i = 0; i < 3; i++) {
       const spike = new THREE.Mesh(new THREE.ConeGeometry(0.1, 0.24, 4), new THREE.MeshStandardMaterial({ color: 0xf97316 }));
       spike.rotation.x = -Math.PI / 2;
       spike.position.set(0, 1.55 - i * 0.25, -0.34);
-      group.add(spike);
+      bodyGroup.add(spike);
     }
   } else if (app.outfit === 'banana_suit') {
-    // Funny Giant Banana Costume Shell
     const bananaBody = new THREE.Mesh(new THREE.CylinderGeometry(0.42, 0.52, 1.85, 10), shirtMat);
     bananaBody.position.set(0, 1.5, -0.02);
     bananaBody.rotation.x = 0.08;
     const bananaTip = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.14, 0.32, 6), accentMat);
     bananaTip.position.set(0, 2.52, 0.06);
     bananaTip.rotation.x = 0.15;
-    group.add(bananaBody, bananaTip);
+    bodyGroup.add(bananaBody, bananaTip);
   } else if (app.outfit === 'super_undies') {
-    // Superhero Red Undies over blue suit + Gold Belt + Cape
     const undies = new THREE.Mesh(new THREE.BoxGeometry(0.9, 0.34, 0.56), accentMat);
     undies.position.set(0, 0.86, 0);
     const belt = new THREE.Mesh(new THREE.BoxGeometry(0.92, 0.1, 0.58), new THREE.MeshStandardMaterial({ color: 0xfacc15 }));
@@ -809,12 +936,11 @@ function buildDetectiveCharacterMesh(appearance) {
     const cape = new THREE.Mesh(new THREE.BoxGeometry(0.84, 1.15, 0.06), accentMat);
     cape.position.set(0, 1.12, -0.32);
     cape.rotation.x = 0.18;
-    group.add(undies, belt, emblem, cape);
+    bodyGroup.add(undies, belt, emblem, cape);
   } else {
-    // Student Tie / Pocket badge
     const tie = new THREE.Mesh(new THREE.BoxGeometry(0.14, 0.45, 0.05), accentMat);
     tie.position.set(0, 1.35, 0.27);
-    group.add(tie);
+    bodyGroup.add(tie);
   }
 
   // Arms
@@ -832,7 +958,7 @@ function buildDetectiveCharacterMesh(appearance) {
   rightHand.position.y = -0.4;
   rightArm.add(rightHand);
 
-  group.add(leftArm, rightArm);
+  bodyGroup.add(leftArm, rightArm);
 
   // Head Group
   const headGroup = new THREE.Group();
@@ -842,7 +968,7 @@ function buildDetectiveCharacterMesh(appearance) {
   head.castShadow = true;
   headGroup.add(head);
 
-  // Eyes & Smile
+  // Eyes
   const eyeGeo = new THREE.SphereGeometry(0.065, 8, 8);
   const eyeMat = new THREE.MeshBasicMaterial({ color: 0x0f172a });
   const leftEye = new THREE.Mesh(eyeGeo, eyeMat);
@@ -851,7 +977,7 @@ function buildDetectiveCharacterMesh(appearance) {
   rightEye.position.set(0.17, 0.06, 0.38);
   headGroup.add(leftEye, rightEye);
 
-  // Hairstyles (10 Styles!)
+  // Hairstyles (14 Stylish Options!)
   const hairGroup = new THREE.Group();
   const topHair = new THREE.Mesh(new THREE.BoxGeometry(0.82, 0.24, 0.82), hairMat);
   topHair.position.y = 0.36;
@@ -914,6 +1040,34 @@ function buildDetectiveCharacterMesh(appearance) {
       flame.rotation.x = Math.sin(ang) * 0.35;
       hairGroup.add(flame);
     }
+  } else if (app.hairStyle === 'odango') {
+    const topBun = new THREE.Mesh(new THREE.SphereGeometry(0.28, 12, 12), hairMat);
+    topBun.position.set(0, 0.58, -0.08);
+    const pin = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.03, 0.72, 6), new THREE.MeshStandardMaterial({ color: 0xfacc15 }));
+    pin.rotation.z = Math.PI / 2.3;
+    pin.position.set(0, 0.58, -0.08);
+    hairGroup.add(topBun, pin);
+  } else if (app.hairStyle === 'twintails_long') {
+    [-0.5, 0.5].forEach((tx, idx) => {
+      const tail = new THREE.Mesh(new THREE.CylinderGeometry(0.14, 0.24, 1.15, 8), hairMat);
+      tail.position.set(tx, -0.18, -0.12);
+      tail.rotation.z = idx === 0 ? 0.18 : -0.18;
+      hairGroup.add(tail);
+    });
+  } else if (app.hairStyle === 'choppy_bangs') {
+    const bangs = new THREE.Mesh(new THREE.BoxGeometry(0.78, 0.18, 0.12), hairMat);
+    bangs.position.set(0, 0.25, 0.39);
+    const sideL = new THREE.Mesh(new THREE.BoxGeometry(0.14, 0.45, 0.65), hairMat);
+    sideL.position.set(-0.39, 0.12, 0.02);
+    const sideR = new THREE.Mesh(new THREE.BoxGeometry(0.14, 0.45, 0.65), hairMat);
+    sideR.position.set(0.39, 0.12, 0.02);
+    hairGroup.add(bangs, sideL, sideR);
+  } else if (app.hairStyle === 'side_braid') {
+    for (let b = 0; b < 4; b++) {
+      const bead = new THREE.Mesh(new THREE.SphereGeometry(0.13 - b * 0.015, 8, 8), hairMat);
+      bead.position.set(0.42, 0.15 - b * 0.22, 0.15 + b * 0.04);
+      hairGroup.add(bead);
+    }
   }
   headGroup.add(hairGroup);
 
@@ -933,7 +1087,7 @@ function buildDetectiveCharacterMesh(appearance) {
     headGroup.add(bridge);
   }
 
-  // Hats
+  // Hats & Head Props (7 Options!)
   if (app.hat === 'detective') {
     const hatMat = new THREE.MeshStandardMaterial({ color: 0x78350f });
     const brim = new THREE.Mesh(new THREE.CylinderGeometry(0.64, 0.64, 0.07, 16), hatMat);
@@ -961,16 +1115,50 @@ function buildDetectiveCharacterMesh(appearance) {
     earR.rotation.z = Math.PI / 2;
     earR.position.set(0.44, 0.08, 0);
     headGroup.add(band, earL, earR);
+  } else if (app.hat === 'crown') {
+    const goldMat = new THREE.MeshStandardMaterial({ color: 0xfacc15, metalness: 0.5, roughness: 0.25 });
+    const base = new THREE.Mesh(new THREE.CylinderGeometry(0.32, 0.28, 0.16, 12), goldMat);
+    base.position.y = 0.54;
+    headGroup.add(base);
+    for (let i = 0; i < 5; i++) {
+      const ang = (i / 5) * Math.PI * 2;
+      const point = new THREE.Mesh(new THREE.ConeGeometry(0.08, 0.22, 4), goldMat);
+      point.position.set(Math.cos(ang) * 0.24, 0.68, Math.sin(ang) * 0.24);
+      headGroup.add(point);
+    }
+  } else if (app.hat === 'cat_ears') {
+    const earMat = new THREE.MeshStandardMaterial({ color: 0x1e293b });
+    const innerMat = new THREE.MeshStandardMaterial({ color: 0xf472b6 });
+    [-0.26, 0.26].forEach((ex, idx) => {
+      const ear = new THREE.Mesh(new THREE.ConeGeometry(0.16, 0.32, 4), earMat);
+      ear.position.set(ex, 0.58, 0.05);
+      ear.rotation.z = idx === 0 ? 0.2 : -0.2;
+      const inner = new THREE.Mesh(new THREE.ConeGeometry(0.09, 0.2, 4), innerMat);
+      inner.position.set(ex, 0.56, 0.09);
+      inner.rotation.z = idx === 0 ? 0.2 : -0.2;
+      headGroup.add(ear, inner);
+    });
+  } else if (app.hat === 'alien_antenna') {
+    const stalkMat = new THREE.MeshStandardMaterial({ color: 0x22c55e });
+    const orbMat = new THREE.MeshBasicMaterial({ color: 0xa3e635 });
+    [-0.18, 0.18].forEach((ax, idx) => {
+      const stalk = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.03, 0.42, 6), stalkMat);
+      stalk.position.set(ax, 0.62, 0);
+      stalk.rotation.z = idx === 0 ? 0.25 : -0.25;
+      const orb = new THREE.Mesh(new THREE.SphereGeometry(0.09, 8, 8), orbMat);
+      orb.position.set(ax * 1.4, 0.82, 0);
+      headGroup.add(stalk, orb);
+    });
   }
 
-  group.add(headGroup);
+  bodyGroup.add(headGroup);
 
-  group.userData = { leftLeg, rightLeg, leftArm, rightArm, headGroup };
-  return group;
+  root.userData = { bodyGroup, leftLeg, rightLeg, leftArm, rightArm, headGroup, rideHeight };
+  return root;
 }
 
 /* ==========================================================================
-   7. DRESSING ROOM 3D PREVIEW ENGINE
+   7. DRESSING ROOM & VEHICLES 3D PREVIEW ENGINE
    ========================================================================== */
 let previewScene, previewCamera, previewRenderer, previewCharMesh;
 let isPreviewDragging = false, prevPreviewX = 0, previewRotY = 0.3;
@@ -981,7 +1169,7 @@ function initPreview3D() {
 
   previewScene = new THREE.Scene();
   previewCamera = new THREE.PerspectiveCamera(40, canvas.clientWidth / canvas.clientHeight, 0.1, 50);
-  previewCamera.position.set(0, 1.65, 4.4);
+  previewCamera.position.set(0, 1.65, 4.6);
   previewCamera.lookAt(0, 1.35, 0);
 
   previewRenderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
@@ -993,15 +1181,13 @@ function initPreview3D() {
   dir.position.set(3, 6, 4);
   previewScene.add(amb, dir);
 
-  // Pedestal
   const ped = new THREE.Mesh(
-    new THREE.CylinderGeometry(1.1, 1.25, 0.2, 24),
+    new THREE.CylinderGeometry(1.15, 1.3, 0.2, 24),
     new THREE.MeshStandardMaterial({ color: 0x38bdf8, roughness: 0.4 })
   );
   ped.position.y = -0.1;
   previewScene.add(ped);
 
-  // Drag to rotate 360
   canvas.addEventListener('pointerdown', e => {
     isPreviewDragging = true;
     prevPreviewX = e.clientX;
@@ -1035,32 +1221,30 @@ function updatePreviewCharacter() {
 function renderWardrobeUI() {
   const app = gameState.player.appearance;
 
-  // Skin swatches
+  document.getElementById('opt-vehicle').innerHTML = APPEARANCE_OPTIONS.vehicles.map(v => `
+    <div class="opt-chip ${app.vehicle === v.id ? 'active' : ''}" onclick="setAppearanceProp('vehicle','${v.id}')">${v.label}</div>
+  `).join('');
+
   document.getElementById('opt-skin').innerHTML = APPEARANCE_OPTIONS.skinTones.map(s => `
     <div class="color-swatch ${app.skin === s.color ? 'active' : ''}" style="background:${s.color}" title="${s.label}" onclick="setAppearanceProp('skin','${s.color}')"></div>
   `).join('');
 
-  // Hairstyles
   document.getElementById('opt-hair').innerHTML = APPEARANCE_OPTIONS.hairStyles.map(h => `
     <div class="opt-chip ${app.hairStyle === h.id ? 'active' : ''}" onclick="setAppearanceProp('hairStyle','${h.id}')">${h.label}</div>
   `).join('');
 
-  // Hair colors
   document.getElementById('opt-haircolor').innerHTML = APPEARANCE_OPTIONS.hairColors.map(c => `
     <div class="color-swatch ${app.hairColor === c.color ? 'active' : ''}" style="background:${c.color}" title="${c.label}" onclick="setAppearanceProp('hairColor','${c.color}')"></div>
   `).join('');
 
-  // Outfits
   document.getElementById('opt-outfit').innerHTML = APPEARANCE_OPTIONS.outfits.map(o => `
     <div class="opt-chip ${app.outfit === o.id ? 'active' : ''}" onclick="setAppearanceProp('outfit','${o.id}')">${o.label}</div>
   `).join('');
 
-  // Glasses
   document.getElementById('opt-glasses').innerHTML = APPEARANCE_OPTIONS.glasses.map(g => `
     <div class="opt-chip ${app.glasses === g.id ? 'active' : ''}" onclick="setAppearanceProp('glasses','${g.id}')">${g.label}</div>
   `).join('');
 
-  // Hats
   document.getElementById('opt-hat').innerHTML = APPEARANCE_OPTIONS.hats.map(h => `
     <div class="opt-chip ${app.hat === h.id ? 'active' : ''}" onclick="setAppearanceProp('hat','${h.id}')">${h.label}</div>
   `).join('');
@@ -1077,6 +1261,7 @@ function setAppearanceProp(key, val) {
 function randomizeAppearance() {
   const rand = arr => arr[Math.floor(Math.random() * arr.length)];
   gameState.player.appearance = {
+    vehicle: rand(APPEARANCE_OPTIONS.vehicles).id,
     skin: rand(APPEARANCE_OPTIONS.skinTones).color,
     hairStyle: rand(APPEARANCE_OPTIONS.hairStyles).id,
     hairColor: rand(APPEARANCE_OPTIONS.hairColors).color,
@@ -1088,8 +1273,27 @@ function randomizeAppearance() {
   renderWardrobeUI();
 }
 
+function cycleVehicle() {
+  const list = APPEARANCE_OPTIONS.vehicles;
+  const idx = list.findIndex(v => v.id === gameState.player.appearance.vehicle);
+  const next = list[(idx + 1) % list.length];
+  gameState.player.appearance.vehicle = next.id;
+  saveProgress();
+  rebuildSelfPlayerMesh();
+  updateVehicleButtonUI();
+  SoundEngine.collect();
+  showToast(`เปลี่ยนยานพาหนะ: ${next.label}`);
+}
+
+function updateVehicleButtonUI() {
+  const v = APPEARANCE_OPTIONS.vehicles.find(item => item.id === gameState.player.appearance.vehicle) || APPEARANCE_OPTIONS.vehicles[0];
+  const btn = document.getElementById('btn-vehicle');
+  if (btn) btn.textContent = v.label;
+}
+
 let returnScreenFromWardrobe = 'screen-home';
 function openDressingRoom() {
+  SoundEngine.init();
   const active = document.querySelector('.screen-overlay:not(.hidden)');
   returnScreenFromWardrobe = active ? active.id : 'HUD';
   showScreen('screen-wardrobe');
@@ -1111,25 +1315,148 @@ function closeDressingRoom() {
 function saveAppearanceAndClose() {
   saveProgress();
   rebuildSelfPlayerMesh();
-  showToast('บันทึกชุดนักสืบ 3D เรียบร้อย! 👕✨');
+  updateVehicleButtonUI();
+  showToast('บันทึกชุดนักสืบและยานพาหนะเรียบร้อย! 👕🛹');
   closeDressingRoom();
 }
 
 /* ==========================================================================
-   8. THREE.JS 3D SCHOOL WORLD & MULTIPLAYER SCENE
+   8. 3D VICTORY PODIUM SHOWCASE MODAL (ANYONE CAN OPEN ANYTIME)
    ========================================================================== */
-let scene, camera, renderer, playerGroup;
+let podiumScene, podiumCamera, podiumRenderer, podiumGroup;
+let returnScreenFromPodium = 'screen-home';
+
+function initPodiumModal3D() {
+  const canvas = document.getElementById('podium-canvas');
+  if (!canvas || podiumRenderer) return;
+
+  podiumScene = new THREE.Scene();
+  podiumCamera = new THREE.PerspectiveCamera(42, canvas.clientWidth / canvas.clientHeight, 0.1, 60);
+  podiumCamera.position.set(0, 3.2, 8.6);
+  podiumCamera.lookAt(0, 1.9, 0);
+
+  podiumRenderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
+  podiumRenderer.setSize(canvas.clientWidth || 700, 250);
+  podiumRenderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+
+  const amb = new THREE.AmbientLight(0xffffff, 0.85);
+  const spot = new THREE.DirectionalLight(0xfef08a, 1.1);
+  spot.position.set(4, 9, 6);
+  podiumScene.add(amb, spot);
+
+  podiumGroup = new THREE.Group();
+  podiumScene.add(podiumGroup);
+
+  function animatePodiumModal() {
+    requestAnimationFrame(animatePodiumModal);
+    if (!document.getElementById('screen-podium').classList.contains('hidden')) {
+      const t = performance.now() * 0.004;
+      podiumGroup.children.forEach(child => {
+        if (child.userData.isChamp) {
+          child.position.y = child.userData.baseY + Math.abs(Math.sin(t + child.userData.phase)) * 0.22;
+          child.rotation.y = Math.sin(t * 0.7 + child.userData.phase) * 0.35;
+        }
+      });
+      podiumRenderer.render(podiumScene, podiumCamera);
+    }
+  }
+  animatePodiumModal();
+}
+
+function renderPodiumModalStage(ranked) {
+  initPodiumModal3D();
+  while (podiumGroup.children.length > 0) {
+    podiumGroup.remove(podiumGroup.children[0]);
+  }
+
+  // Podium Blocks: Rank 2 (Left), Rank 1 (Center), Rank 3 (Right)
+  const slots = [
+    { rank: 1, x: 0, h: 1.7, color: 0xfacc15, label: '🥇 อันดับ 1' },
+    { rank: 2, x: -2.4, h: 1.2, color: 0xe2e8f0, label: '🥈 อันดับ 2' },
+    { rank: 3, x: 2.4, h: 0.85, color: 0xd97706, label: '🥉 อันดับ 3' }
+  ];
+
+  slots.forEach(s => {
+    const block = new THREE.Mesh(
+      new THREE.BoxGeometry(1.9, s.h, 1.8),
+      new THREE.MeshStandardMaterial({ color: s.color, roughness: 0.35, metalness: 0.3 })
+    );
+    block.position.set(s.x, s.h / 2, 0);
+    podiumGroup.add(block);
+
+    const player = ranked[s.rank - 1];
+    if (player) {
+      const charMesh = buildDetectiveCharacterMesh(player.appearance);
+      charMesh.scale.set(0.78, 0.78, 0.78);
+      charMesh.position.set(s.x, s.h, 0);
+      charMesh.userData = { isChamp: true, baseY: s.h, phase: s.rank };
+      podiumGroup.add(charMesh);
+    }
+  });
+
+  // Top 3 Cards below canvas
+  const cardsEl = document.getElementById('podium-top3-cards');
+  cardsEl.innerHTML = [2, 1, 3].map(r => {
+    const p = ranked[r - 1];
+    const medal = r === 1 ? '🥇 อันดับ 1' : r === 2 ? '🥈 อันดับ 2' : '🥉 อันดับ 3';
+    return `
+      <div class="podium-rank-card rank-${r}">
+        <div style="font-size:13px; font-weight:700; color:#fbbf24;">${medal}</div>
+        <div style="font-size:14px; font-weight:700; color:#fff; margin:2px 0;">${p ? p.name : 'ว่าง'}</div>
+        <div style="font-size:12px; color:#34d399; font-weight:600;">${p ? `⭐ ${p.total} คะแนน` : '-'}</div>
+      </div>
+    `;
+  }).join('');
+}
+
+function openPodiumShowcase() {
+  SoundEngine.init();
+  const active = document.querySelector('.screen-overlay:not(.hidden)');
+  returnScreenFromPodium = active ? active.id : 'HUD';
+
+  const ranked = getRankedPlayersList();
+  showScreen('screen-podium');
+
+  setTimeout(() => {
+    renderPodiumModalStage(ranked);
+  }, 50);
+
+  const tbody = document.getElementById('leaderboard-tbody');
+  tbody.innerHTML = ranked.map((e, idx) => `
+    <tr class="${e.isSelf ? 'current-player' : ''}">
+      <td>${idx === 0 ? '🥇' : idx === 1 ? '🥈' : idx === 2 ? '🥉' : idx + 1}</td>
+      <td style="text-align:left;">${e.name} ${e.isSelf ? '(คุณ)' : ''}</td>
+      <td>${e.no}</td>
+      <td>${e.s1}</td>
+      <td>${e.s2}</td>
+      <td>${e.s3}</td>
+      <td style="color:#fbbf24; font-weight:700;">${e.total}</td>
+    </tr>
+  `).join('');
+}
+
+function closePodiumShowcase() {
+  if (returnScreenFromPodium === 'HUD') {
+    hideAllScreens();
+  } else {
+    showScreen(returnScreenFromPodium);
+  }
+}
+
+/* ==========================================================================
+   9. THREE.JS 3D SCHOOL WORLD, WORLD PODIUM & MULTIPLAYER SCENE
+   ========================================================================== */
+let scene, camera, renderer, playerGroup, worldPodiumGroup;
 let colliders = [];
 let worldLabels = [];
 let evidenceMeshes = [];
 let remotePlayerMeshes = {};
 let activeEvidenceTarget = null;
 
-// Player Physics & Camera
 const playerState = {
   velY: 0,
   onGround: true,
-  speed: 13.5,
+  baseSpeed: 13.0,
   jumpForce: 11.5,
   gravity: -28,
   walkCycle: 0
@@ -1156,7 +1483,6 @@ function init3DWorld() {
   renderer.shadowMap.enabled = true;
   renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 
-  // Lighting
   const hemiLight = new THREE.HemisphereLight(0xffffff, 0x4ade80, 0.78);
   hemiLight.position.set(0, 50, 0);
   scene.add(hemiLight);
@@ -1176,6 +1502,7 @@ function init3DWorld() {
   scene.add(dirLight);
 
   buildSchoolEnvironment();
+  rebuildWorldPodium();
   rebuildSelfPlayerMesh();
   setupControls();
   animateWorld();
@@ -1205,7 +1532,6 @@ function registerWorldLabel(text, x, y, z) {
 }
 
 function buildSchoolEnvironment() {
-  // Main Grass Ground
   const ground = new THREE.Mesh(
     new THREE.PlaneGeometry(160, 160),
     new THREE.MeshStandardMaterial({ color: 0x4ade80, roughness: 0.85 })
@@ -1236,16 +1562,17 @@ function buildSchoolEnvironment() {
   createBox(1.8, 0.2, 0.08, 0xffffff, 0.95, 9.5, 14);
   createBox(1.8, 0.2, 0.08, 0xef4444, 0.95, 9.3, 14);
 
-  // 1. ACADEMIC BUILDING & CLASSROOM ม.2/1 (West: x = -28, z = 16)
+  registerWorldLabel('🏆 แท่นรางวัลนักเรียนดีเด่น 5W1H', 0, 5.2, 6);
+
+  // 1. ACADEMIC BUILDING & CLASSROOM ม.2/1
   createBox(16, 0.2, 16, 0xfef3c7, -28, 0.1, 16, false, true);
-  createBox(16, 5.5, 0.6, 0xfbbf24, -28, 2.75, 23.7); // Back Wall
-  createBox(0.6, 5.5, 16, 0xfbbf24, -35.7, 2.75, 16); // Left Wall
-  createBox(0.6, 5.5, 6, 0xfbbf24, -20.3, 2.75, 21);   // Partial Right Wall
-  createBox(17.5, 0.8, 17.5, 0xea580c, -28, 5.9, 16);  // Roof
+  createBox(16, 5.5, 0.6, 0xfbbf24, -28, 2.75, 23.7);
+  createBox(0.6, 5.5, 16, 0xfbbf24, -35.7, 2.75, 16);
+  createBox(0.6, 5.5, 6, 0xfbbf24, -20.3, 2.75, 21);
+  createBox(17.5, 0.8, 17.5, 0xea580c, -28, 5.9, 16);
   addCollider(-36.2, -35.2, 8, 24);
   addCollider(-36, -20, 23.2, 24.2);
 
-  // Blackboard & Student Desks
   createBox(6.5, 2.2, 0.2, 0x065f46, -28, 2.8, 23.3);
   for (let row = 0; row < 2; row++) {
     for (let col = 0; col < 3; col++) {
@@ -1257,7 +1584,7 @@ function buildSchoolEnvironment() {
   }
   registerWorldLabel('🏫 อาคารเรียน • ห้อง ม.2/1', -28, 7.2, 16);
 
-  // 2. CANTEEN / โรงอาหาร (East: x = 28, z = 16)
+  // 2. CANTEEN / โรงอาหาร
   createBox(16, 0.2, 16, 0xf1f5f9, 28, 0.1, 16, false, true);
   createBox(17.5, 0.7, 17.5, 0x0284c7, 28, 5.6, 16);
   [21, 35].forEach(px => {
@@ -1266,7 +1593,6 @@ function buildSchoolEnvironment() {
       addCollider(px - 0.4, px + 0.4, pz - 0.4, pz + 0.4);
     });
   });
-  // Food Counter & Dining Tables
   createBox(11, 1.2, 1.8, 0xf97316, 28, 0.6, 22);
   addCollider(22.5, 33.5, 21, 23);
   for (let i = 0; i < 2; i++) {
@@ -1274,12 +1600,11 @@ function buildSchoolEnvironment() {
     createBox(2.6, 0.85, 1.3, 0x38bdf8, tx, 0.42, 14);
     addCollider(tx - 1.3, tx + 1.3, 13.3, 14.7);
   }
-  // Overflowing Trash Cans
   createBox(0.9, 1.1, 0.9, 0x16a34a, 22, 0.55, 17);
   createBox(0.9, 1.1, 0.9, 0x2563eb, 23.2, 0.55, 17);
   registerWorldLabel('🍜 โรงอาหาร (Canteen)', 28, 7.0, 16);
 
-  // 3. SPORTS FIELD / สนามกีฬา (North: x = 0, z = -28)
+  // 3. SPORTS FIELD / สนามกีฬา
   createBox(32, 0.1, 22, 0x16a34a, 0, 0.05, -28, false, true);
   createBox(32, 0.12, 0.3, 0xffffff, 0, 0.06, -17.2, false, false);
   createBox(32, 0.12, 0.3, 0xffffff, 0, 0.06, -38.8, false, false);
@@ -1287,14 +1612,12 @@ function buildSchoolEnvironment() {
   createBox(0.3, 0.12, 22, 0xffffff, 15.8, 0.06, -28, false, false);
   createBox(0.3, 0.12, 22, 0xffffff, 0, 0.06, -28, false, false);
 
-  // Football Goals
   [-15.5, 15.5].forEach(gx => {
     createBox(0.25, 2.6, 0.25, 0xffffff, gx, 1.3, -30.5);
     createBox(0.25, 2.6, 0.25, 0xffffff, gx, 1.3, -25.5);
     createBox(0.25, 0.25, 5.2, 0xffffff, gx, 2.6, -28);
   });
 
-  // Water Puddle & Drain Grate
   const puddle = new THREE.Mesh(
     new THREE.CircleGeometry(4.5, 24),
     new THREE.MeshStandardMaterial({ color: 0x0ea5e9, roughness: 0.1, metalness: 0.3, transparent: true, opacity: 0.85 })
@@ -1305,14 +1628,14 @@ function buildSchoolEnvironment() {
   createBox(1.6, 0.18, 1.6, 0x475569, 10, 0.09, -26);
   registerWorldLabel('⚽ สนามกีฬา (Sports Field)', 0, 5.5, -28);
 
-  // 4. LIBRARY / ห้องสมุด (South: x = 0, z = 36)
+  // 4. LIBRARY / ห้องสมุด
   createBox(18, 5.5, 12, 0xa855f7, 0, 2.75, 36);
   createBox(19.5, 0.8, 13.5, 0x6b21a8, 0, 5.8, 36);
   createBox(3.2, 3.2, 0.3, 0xfef08a, 0, 1.6, 29.9);
   addCollider(-9.2, 9.2, 29.8, 42.2);
   registerWorldLabel('📚 ห้องสมุดโรงเรียน (Library)', 0, 7.2, 36);
 
-  // Decorative Trees & School Perimeter
+  // Decorative Trees
   const treePositions = [
     [-14, 4], [14, 4], [-14, 26], [14, 26],
     [-22, -14], [22, -14], [-22, -36], [22, -36]
@@ -1329,14 +1652,53 @@ function buildSchoolEnvironment() {
     addCollider(tx - 0.6, tx + 0.6, tz - 0.6, tz + 0.6);
   });
 
-  // Static NPC Teachers & Students
-  createWorldNPC(0xef4444, 0xfef08a, -22, 13, 0);
-  createWorldNPC(0x10b981, 0xffffff, 31, 13, -1.5);
-  createWorldNPC(0x2563eb, 0xfacc15, -10, -23, 0.8);
+  // Static NPC Teachers
+  createWorldNPC(0xef4444, -22, 13, 0);
+  createWorldNPC(0x10b981, 31, 13, -1.5);
+  createWorldNPC(0x2563eb, -10, -23, 0.8);
 }
 
-function createWorldNPC(shirtColor, pantsColor, x, z, rotY) {
+function rebuildWorldPodium() {
+  if (!scene) return;
+  if (worldPodiumGroup) scene.remove(worldPodiumGroup);
+  worldPodiumGroup = new THREE.Group();
+  worldPodiumGroup.position.set(0, 0.08, 6);
+
+  const ranked = getRankedPlayersList();
+  const slots = [
+    { rank: 1, x: 0, h: 1.5, color: 0xfacc15 },
+    { rank: 2, x: -2.2, h: 1.05, color: 0xe2e8f0 },
+    { rank: 3, x: 2.2, h: 0.75, color: 0xd97706 }
+  ];
+
+  slots.forEach(s => {
+    const step = new THREE.Mesh(
+      new THREE.BoxGeometry(1.9, s.h, 1.8),
+      new THREE.MeshStandardMaterial({ color: s.color, roughness: 0.35, metalness: 0.25 })
+    );
+    step.position.set(s.x, s.h / 2, 0);
+    step.castShadow = true;
+    step.receiveShadow = true;
+    worldPodiumGroup.add(step);
+
+    const p = ranked[s.rank - 1];
+    if (p) {
+      const statue = buildDetectiveCharacterMesh({ ...p.appearance, vehicle: 'none' });
+      statue.scale.set(0.85, 0.85, 0.85);
+      statue.position.set(s.x, s.h, 0);
+      statue.userData.isPodiumChamp = true;
+      statue.userData.baseY = s.h;
+      statue.userData.rank = s.rank;
+      worldPodiumGroup.add(statue);
+    }
+  });
+
+  scene.add(worldPodiumGroup);
+}
+
+function createWorldNPC(shirtColor, x, z, rotY) {
   const npc = buildDetectiveCharacterMesh({
+    vehicle: 'none',
     skin: '#f5cba7',
     hairStyle: 'bob',
     hairColor: '#1e293b',
@@ -1351,7 +1713,7 @@ function createWorldNPC(shirtColor, pantsColor, x, z, rotY) {
 
 function rebuildSelfPlayerMesh() {
   if (!scene) return;
-  const oldPos = playerGroup ? playerGroup.position.clone() : new THREE.Vector3(0, 0, 10);
+  const oldPos = playerGroup ? playerGroup.position.clone() : new THREE.Vector3(0, 0, 11);
   const oldRot = playerGroup ? playerGroup.rotation.y : Math.PI;
   if (playerGroup) scene.remove(playerGroup);
 
@@ -1362,7 +1724,54 @@ function rebuildSelfPlayerMesh() {
 }
 
 /* ==========================================================================
-   9. MISSION SPAWNING & EVIDENCE INTERACTION
+   10. EMOTES SYSTEM
+   ========================================================================== */
+function triggerEmote(type) {
+  SoundEngine.init();
+  currentEmote = { type, timer: 160 };
+  SoundEngine.playTone(540, 'sine', 0.12, 0.14);
+  broadcastPlayerState();
+  const labels = {
+    dance: '💃 กำลังเต้นฉลอง!',
+    wave: '👋 โบกมือทักทายเพื่อนๆ',
+    think: '🤔 กำลังครุ่นคิดวิเคราะห์เบาะแส',
+    faint: '🤣 ล้มตัวนอนแผ่สุดฮา!'
+  };
+  showToast(labels[type] || 'แสดงท่าทาง!');
+}
+
+function applyEmoteAnimation(charMesh, emoteType, time) {
+  const { bodyGroup, leftArm, rightArm, leftLeg, rightLeg } = charMesh.userData;
+  if (!bodyGroup) return;
+
+  // Reset transforms
+  bodyGroup.rotation.set(0, 0, 0);
+  bodyGroup.position.y = charMesh.userData.rideHeight || 0;
+
+  if (emoteType === 'dance') {
+    bodyGroup.position.y += Math.abs(Math.sin(time * 10)) * 0.25;
+    bodyGroup.rotation.y = Math.sin(time * 6) * 0.4;
+    leftArm.rotation.z = Math.sin(time * 10) * 0.8 + 0.8;
+    rightArm.rotation.z = -Math.sin(time * 10) * 0.8 - 0.8;
+  } else if (emoteType === 'wave') {
+    rightArm.rotation.z = 2.6 + Math.sin(time * 14) * 0.45;
+    leftArm.rotation.z = 0;
+  } else if (emoteType === 'think') {
+    rightArm.rotation.x = -1.9;
+    rightArm.rotation.z = -0.35;
+    bodyGroup.rotation.x = 0.08;
+  } else if (emoteType === 'faint') {
+    bodyGroup.rotation.x = -Math.PI / 2;
+    bodyGroup.position.y = 0.42;
+    leftArm.rotation.z = 0.6;
+    rightArm.rotation.z = -0.6;
+    leftLeg.rotation.z = 0.2;
+    rightLeg.rotation.z = -0.2;
+  }
+}
+
+/* ==========================================================================
+   11. MISSION SPAWNING & EVIDENCE INTERACTION
    ========================================================================== */
 function loadMissionInWorld(missionId) {
   gameState.currentMissionId = missionId;
@@ -1474,10 +1883,18 @@ function closeEvidenceModal() {
 }
 
 /* ==========================================================================
-   10. 5W1H ANALYSIS QUIZ SYSTEM
+   12. 5W1H ANALYSIS QUIZ SYSTEM WITH +5 SPEED BONUS
    ========================================================================== */
 function start5W1HQuiz() {
-  gameState.quizState = { step: 0, score: 0, answered: false };
+  if (gameState.quizState.timerInterval) clearInterval(gameState.quizState.timerInterval);
+  gameState.quizState = {
+    step: 0,
+    score: 0,
+    speedBonusTotal: 0,
+    questionStartTime: 0,
+    timerInterval: null,
+    answered: false
+  };
   const mission = MISSIONS.find(m => m.id === gameState.currentMissionId);
   document.getElementById('quiz-mission-name').textContent = `วิเคราะห์คดี: ${mission.title}`;
 
@@ -1487,6 +1904,29 @@ function start5W1HQuiz() {
 
   renderQuizQuestion();
   showScreen('screen-quiz');
+}
+
+function startSpeedBonusTimer() {
+  if (gameState.quizState.timerInterval) clearInterval(gameState.quizState.timerInterval);
+  gameState.quizState.questionStartTime = performance.now();
+  const badge = document.getElementById('quiz-speed-badge');
+  badge.classList.remove('expired');
+
+  gameState.quizState.timerInterval = setInterval(() => {
+    if (gameState.quizState.answered) {
+      clearInterval(gameState.quizState.timerInterval);
+      return;
+    }
+    const elapsed = (performance.now() - gameState.quizState.questionStartTime) / 1000;
+    const rem = Math.max(0, 10 - elapsed);
+    if (rem > 0) {
+      badge.textContent = `⚡ โบนัสตอบไว +5 (${rem.toFixed(1)}s)`;
+    } else {
+      badge.textContent = '⏱️ หมดเวลาโบนัสตอบไว';
+      badge.classList.add('expired');
+      clearInterval(gameState.quizState.timerInterval);
+    }
+  }, 100);
 }
 
 function renderQuizQuestion() {
@@ -1518,11 +1958,16 @@ function renderQuizQuestion() {
   document.getElementById('quiz-explanation-box').classList.add('hidden');
   document.getElementById('quiz-next-btn').classList.add('hidden');
   gameState.quizState.answered = false;
+  startSpeedBonusTimer();
 }
 
 function selectQuizOption(selectedIndex) {
   if (gameState.quizState.answered) return;
   gameState.quizState.answered = true;
+  if (gameState.quizState.timerInterval) clearInterval(gameState.quizState.timerInterval);
+
+  const elapsedSec = (performance.now() - gameState.quizState.questionStartTime) / 1000;
+  const gotSpeedBonus = elapsedSec <= 10.0;
 
   const mission = MISSIONS.find(m => m.id === gameState.currentMissionId);
   const qObj = mission.questions[gameState.quizState.step];
@@ -1536,9 +1981,13 @@ function selectQuizOption(selectedIndex) {
 
   const feedbackTitle = document.getElementById('quiz-feedback-title');
   if (selectedIndex === qObj.correct) {
-    gameState.quizState.score += 100;
+    const bonus = gotSpeedBonus ? 5 : 0;
+    gameState.quizState.score += (100 + bonus);
+    gameState.quizState.speedBonusTotal += bonus;
     SoundEngine.correct();
-    feedbackTitle.textContent = '✅ ถูกต้อง! (+100 คะแนน)';
+    feedbackTitle.textContent = gotSpeedBonus
+      ? `✅ ถูกต้อง! (+100 คะแนน ⚡ โบนัสตอบไว +5 คะแนน!)`
+      : `✅ ถูกต้อง! (+100 คะแนน)`;
     feedbackTitle.style.color = '#34d399';
   } else {
     SoundEngine.wrong();
@@ -1571,6 +2020,7 @@ function toggleEvidenceReview() {
 function finishMission() {
   const mId = gameState.currentMissionId;
   const earned = gameState.quizState.score;
+  const speedTotal = gameState.quizState.speedBonusTotal;
   const stars = earned >= 500 ? 3 : earned >= 300 ? 2 : 1;
 
   if (earned > (gameState.player.scores[mId] || 0)) {
@@ -1584,6 +2034,7 @@ function finishMission() {
   }
 
   saveProgress();
+  broadcastPlayerState(true);
   updateHUD();
   SoundEngine.fanfare();
 
@@ -1591,10 +2042,13 @@ function finishMission() {
   document.getElementById('sum-badge').textContent = `ปิดคดีสำเร็จ • ${mission.badge}`;
   document.getElementById('sum-title').textContent = mission.title;
   document.getElementById('sum-stars').textContent = '⭐'.repeat(stars) + '☆'.repeat(3 - stars);
-  document.getElementById('sum-score-text').textContent = `ได้รับ ${earned} / 600 คะแนน`;
+  document.getElementById('sum-score-text').textContent = `ได้รับ ${earned} คะแนน`;
+  document.getElementById('sum-speed-text').textContent = speedTotal > 0
+    ? `⚡ รวมโบนัสตอบไว +${speedTotal} คะแนน!`
+    : '💡 ตอบถูกภายใน 10 วินาทีแรกจะได้รับโบนัส +5 คะแนน';
 
   const msgs = {
-    3: 'สุดยอดนักสืบระดับปรมาจารย์! คุณวิเคราะห์หลัก 5W1H ได้เฉียบคมครบทุกมิติ',
+    3: 'สุดยอดนักสืบระดับปรมาจารย์! ตัวละครของคุณพร้อมขึ้นแท่นรับรางวัลแล้ว!',
     2: 'เก่งมากนักสืบ! คุณรวบรวมข้อมูลและระบุสาเหตุของปัญหาได้เป็นอย่างดี',
     1: 'ภารกิจสำเร็จ! ลองทบทวนหลักฐานแต่ละชิ้นแล้วเล่นซ้ำเพื่อเก็บ 3 ดาวเต็มนะ'
   };
@@ -1613,7 +2067,7 @@ function finishMission() {
 }
 
 /* ==========================================================================
-   11. SCREEN NAVIGATION & LEADERBOARD
+   13. SCREEN NAVIGATION & ONLINE MODAL
    ========================================================================== */
 function hideAllScreens() {
   document.querySelectorAll('.screen-overlay').forEach(el => el.classList.add('hidden'));
@@ -1627,6 +2081,7 @@ function showScreen(id) {
 }
 
 function goToRegister() {
+  SoundEngine.init();
   if (gameState.player.name) {
     openMissionSelect();
   } else {
@@ -1635,6 +2090,7 @@ function goToRegister() {
 }
 
 function submitRegistration() {
+  SoundEngine.init();
   const name = document.getElementById('input-name').value.trim();
   const no = document.getElementById('input-no').value.trim();
   if (!name) {
@@ -1672,7 +2128,7 @@ function openMissionSelect() {
         </div>
         <div>
           <div style="font-size:13px; color:#34d399; font-weight:600; margin-bottom:10px;">
-            คะแนนสูงสุด: ${score} / 600
+            คะแนนสูงสุด: ${score} / 630
           </div>
           ${unlocked
             ? `<button class="btn btn-primary btn-sm" style="width:100%;" onclick="startMission(${m.id})">${score > 0 ? '🔄 เล่นอีกครั้ง' : '🚀 เริ่มภารกิจ'}</button>`
@@ -1687,6 +2143,7 @@ function openMissionSelect() {
 }
 
 function startMission(missionId) {
+  SoundEngine.init();
   hideAllScreens();
   loadMissionInWorld(missionId);
   showToast(`เริ่มภารกิจที่ ${missionId}: เดินหาเบาะแสเรืองแสงสีทอง!`);
@@ -1701,61 +2158,6 @@ function goNextMission() {
   else openMissionSelect();
 }
 
-function openLeaderboard() {
-  const active = document.querySelector('.screen-overlay:not(.hidden)');
-  gameState.lastScreenBeforeModal = active ? active.id : 'HUD';
-
-  const entries = [];
-  // Add all online players + classmates
-  Object.values(onlinePlayers).forEach(p => {
-    entries.push({
-      name: p.name,
-      no: p.no,
-      s1: p.scores[1] || 0,
-      s2: p.scores[2] || 0,
-      s3: p.scores[3] || 0,
-      isSelf: false
-    });
-  });
-
-  if (gameState.player.name) {
-    entries.push({
-      name: gameState.player.name + ' (คุณ)',
-      no: gameState.player.no,
-      s1: gameState.player.scores[1] || 0,
-      s2: gameState.player.scores[2] || 0,
-      s3: gameState.player.scores[3] || 0,
-      isSelf: true
-    });
-  }
-
-  entries.forEach(e => e.total = e.s1 + e.s2 + e.s3);
-  entries.sort((a, b) => b.total - a.total);
-
-  const tbody = document.getElementById('leaderboard-tbody');
-  tbody.innerHTML = entries.map((e, idx) => `
-    <tr class="${e.isSelf ? 'current-player' : ''}">
-      <td>${idx === 0 ? '🥇' : idx === 1 ? '🥈' : idx === 2 ? '🥉' : idx + 1}</td>
-      <td style="text-align:left;">${e.name}</td>
-      <td>${e.no}</td>
-      <td>${e.s1}</td>
-      <td>${e.s2}</td>
-      <td>${e.s3}</td>
-      <td style="color:#fbbf24; font-weight:700;">${e.total}</td>
-    </tr>
-  `).join('');
-
-  showScreen('screen-leaderboard');
-}
-
-function closeLeaderboard() {
-  if (gameState.lastScreenBeforeModal === 'HUD') {
-    hideAllScreens();
-  } else {
-    showScreen(gameState.lastScreenBeforeModal);
-  }
-}
-
 function toggleOnlineModal() {
   const modal = document.getElementById('screen-online');
   if (!modal.classList.contains('hidden')) {
@@ -1765,12 +2167,11 @@ function toggleOnlineModal() {
 
   const listEl = document.getElementById('online-players-list');
   const all = [
-    { name: `${gameState.player.name} (คุณ)`, no: gameState.player.no, score: getTotalScore(), status: 'กำลังสืบสวน' },
+    { name: `${gameState.player.name} (คุณ)`, no: gameState.player.no, score: getTotalScore() },
     ...Object.values(onlinePlayers).map(p => ({
       name: p.name,
       no: p.no,
-      score: getTotalScore(p),
-      status: p.isBot ? 'เพื่อนร่วมห้อง' : 'ออนไลน์ร่วมเซิร์ฟเวอร์'
+      score: getTotalScore(p)
     }))
   ];
 
@@ -1801,31 +2202,30 @@ function resetLocalPlayer() {
   document.getElementById('input-name').value = '';
   document.getElementById('input-no').value = '';
   rebuildSelfPlayerMesh();
+  rebuildWorldPodium();
+  updateVehicleButtonUI();
   showToast('รีเซ็ตข้อมูลนักสืบเรียบร้อย');
   showScreen('screen-home');
 }
 
 /* ==========================================================================
-   12. CONTROLS (KEYBOARD, MOUSE CAMERA & MOBILE VIRTUAL JOYSTICK)
+   14. CONTROLS (KEYBOARD, MOUSE CAMERA & MOBILE VIRTUAL JOYSTICK)
    ========================================================================== */
 function setupControls() {
   window.addEventListener('keydown', e => {
     keys[e.code] = true;
-    if (e.code === 'Space' && isPlayingInWorld()) {
-      jumpPlayer();
-    }
-    if (e.code === 'KeyE' && isPlayingInWorld()) {
-      triggerInteract();
-    }
+    if (e.code === 'Space' && isPlayingInWorld()) jumpPlayer();
+    if (e.code === 'KeyE' && isPlayingInWorld()) triggerInteract();
+    if (e.code === 'KeyV' && isPlayingInWorld()) cycleVehicle();
   });
   window.addEventListener('keyup', e => { keys[e.code] = false; });
 
-  // Camera Drag Rotation (Mouse + Touch Right Side)
   let isDraggingCam = false;
   let prevX = 0, prevY = 0;
   const canvas = document.getElementById('game-canvas');
 
   canvas.addEventListener('mousedown', e => {
+    SoundEngine.init();
     isDraggingCam = true;
     prevX = e.clientX;
     prevY = e.clientY;
@@ -1840,6 +2240,7 @@ function setupControls() {
   window.addEventListener('mouseup', () => { isDraggingCam = false; });
 
   canvas.addEventListener('touchstart', e => {
+    SoundEngine.init();
     if (e.touches.length > 0) {
       const t = e.touches[e.touches.length - 1];
       if (t.clientX > window.innerWidth * 0.35) {
@@ -1860,10 +2261,9 @@ function setupControls() {
   }, { passive: true });
   canvas.addEventListener('touchend', () => { isDraggingCam = false; });
 
-  // Mobile Virtual Joystick
   const joyZone = document.getElementById('joystick-zone');
   const joyStick = document.getElementById('joystick-stick');
-  const maxRadius = 38;
+  const maxRadius = 36;
 
   function handleJoyMove(clientX, clientY) {
     const rect = joyZone.getBoundingClientRect();
@@ -1936,7 +2336,7 @@ function checkCollision(nx, nz) {
 }
 
 /* ==========================================================================
-   13. REMOTE PLAYERS & NAMEPLATES RENDERER
+   15. REMOTE PLAYERS & NAMEPLATES RENDERER
    ========================================================================== */
 let selfNameplateEl = null;
 
@@ -1959,7 +2359,6 @@ function removeRemotePlayerMesh(id) {
 
 function updateRemotePlayersAndBots(dt, time) {
   Object.values(onlinePlayers).forEach(p => {
-    // Move AI Classmate Bots smoothly along waypoints
     if (p.isBot && p.waypoints) {
       const target = p.waypoints[p.wpIdx];
       const dx = target.x - p.x;
@@ -1968,14 +2367,13 @@ function updateRemotePlayersAndBots(dt, time) {
       if (dist < 0.8) {
         p.wpIdx = (p.wpIdx + 1) % p.waypoints.length;
       } else {
-        const speed = 3.6;
+        const speed = 4.2;
         p.x += (dx / dist) * speed * dt;
         p.z += (dz / dist) * speed * dt;
         p.rotY = Math.atan2(dx, dz);
       }
     }
 
-    // Create or update 3D mesh
     let entry = remotePlayerMeshes[p.id];
     const appSig = JSON.stringify(p.appearance);
     if (!entry || entry.appSig !== appSig) {
@@ -1995,22 +2393,29 @@ function updateRemotePlayersAndBots(dt, time) {
       remotePlayerMeshes[p.id] = entry;
     }
 
-    // Smooth interpolate position
     entry.mesh.position.x += (p.x - entry.mesh.position.x) * 0.25;
     entry.mesh.position.y += ((p.y || 0) - entry.mesh.position.y) * 0.25;
     entry.mesh.position.z += (p.z - entry.mesh.position.z) * 0.25;
     entry.mesh.rotation.y = p.rotY || 0;
 
-    // Limb animation
-    entry.walkPhase += dt * 8;
-    const { leftLeg, rightLeg, leftArm, rightArm } = entry.mesh.userData;
-    leftLeg.rotation.x = Math.sin(entry.walkPhase) * 0.45;
-    rightLeg.rotation.x = -Math.sin(entry.walkPhase) * 0.45;
-    leftArm.rotation.x = -Math.sin(entry.walkPhase) * 0.35;
-    rightArm.rotation.x = Math.sin(entry.walkPhase) * 0.35;
+    if (p.emote && p.emote !== 'none') {
+      applyEmoteAnimation(entry.mesh, p.emote, time);
+    } else {
+      entry.walkPhase += dt * 8;
+      const { bodyGroup, leftLeg, rightLeg, leftArm, rightArm } = entry.mesh.userData;
+      bodyGroup.rotation.set(0, 0, 0);
+      bodyGroup.position.y = entry.mesh.userData.rideHeight || 0;
+      if (p.appearance.vehicle === 'none') {
+        leftLeg.rotation.x = Math.sin(entry.walkPhase) * 0.45;
+        rightLeg.rotation.x = -Math.sin(entry.walkPhase) * 0.45;
+        leftArm.rotation.x = -Math.sin(entry.walkPhase) * 0.35;
+        rightArm.rotation.x = Math.sin(entry.walkPhase) * 0.35;
+      } else {
+        leftLeg.rotation.x = 0; rightLeg.rotation.x = 0;
+      }
+    }
 
-    // Project 3D nameplate
-    const headPos = entry.mesh.position.clone().add(new THREE.Vector3(0, 2.95, 0));
+    const headPos = entry.mesh.position.clone().add(new THREE.Vector3(0, 3.05, 0));
     headPos.project(camera);
     if (headPos.z < 1) {
       const sx = (headPos.x * 0.5 + 0.5) * window.innerWidth;
@@ -2027,7 +2432,7 @@ function updateRemotePlayersAndBots(dt, time) {
 }
 
 /* ==========================================================================
-   14. MAIN ANIMATION LOOP
+   16. MAIN ANIMATION LOOP
    ========================================================================== */
 const clock = new THREE.Clock();
 
@@ -2043,6 +2448,16 @@ function animateWorld() {
       item.orb.position.y = Math.sin(time * 3 + idx) * 0.22;
     }
   });
+
+  // Animate World Podium Champions
+  if (worldPodiumGroup) {
+    worldPodiumGroup.children.forEach(child => {
+      if (child.userData.isPodiumChamp) {
+        child.position.y = child.userData.baseY + Math.abs(Math.sin(time * 4 + child.userData.rank)) * 0.16;
+        child.rotation.y = Math.sin(time * 2 + child.userData.rank) * 0.35;
+      }
+    });
+  }
 
   // Update Remote Players & Classmates
   updateRemotePlayersAndBots(dt, time);
@@ -2062,8 +2477,12 @@ function animateWorld() {
       moveForward -= joyVec.y;
     }
 
+    const vObj = APPEARANCE_OPTIONS.vehicles.find(v => v.id === gameState.player.appearance.vehicle) || APPEARANCE_OPTIONS.vehicles[0];
+    const currentSpeed = playerState.baseSpeed * vObj.speedMult;
+
     const len = Math.hypot(moveForward, moveRight);
     if (len > 0.01) {
+      currentEmote = { type: 'none', timer: 0 };
       moveForward /= Math.max(1, len);
       moveRight /= Math.max(1, len);
 
@@ -2072,8 +2491,8 @@ function animateWorld() {
       const worldX = moveRight * cosY - moveForward * sinY;
       const worldZ = -moveRight * sinY - moveForward * cosY;
 
-      const stepX = worldX * playerState.speed * dt;
-      const stepZ = worldZ * playerState.speed * dt;
+      const stepX = worldX * currentSpeed * dt;
+      const stepZ = worldZ * currentSpeed * dt;
 
       if (!checkCollision(playerGroup.position.x + stepX, playerGroup.position.z)) {
         playerGroup.position.x += stepX;
@@ -2088,18 +2507,38 @@ function animateWorld() {
       while (diff > Math.PI) diff -= Math.PI * 2;
       playerGroup.rotation.y += diff * 0.22;
 
-      playerState.walkCycle += dt * 12;
-      const { leftLeg, rightLeg, leftArm, rightArm } = playerGroup.userData;
-      leftLeg.rotation.x = Math.sin(playerState.walkCycle) * 0.6;
-      rightLeg.rotation.x = -Math.sin(playerState.walkCycle) * 0.6;
-      leftArm.rotation.x = -Math.sin(playerState.walkCycle) * 0.5;
-      rightArm.rotation.x = Math.sin(playerState.walkCycle) * 0.5;
+      const { bodyGroup, leftLeg, rightLeg, leftArm, rightArm, rideHeight } = playerGroup.userData;
+      bodyGroup.rotation.set(0, 0, 0);
+      bodyGroup.position.y = rideHeight || 0;
+
+      if (gameState.player.appearance.vehicle === 'none') {
+        playerState.walkCycle += dt * 12;
+        leftLeg.rotation.x = Math.sin(playerState.walkCycle) * 0.6;
+        rightLeg.rotation.x = -Math.sin(playerState.walkCycle) * 0.6;
+        leftArm.rotation.x = -Math.sin(playerState.walkCycle) * 0.5;
+        rightArm.rotation.x = Math.sin(playerState.walkCycle) * 0.5;
+      } else {
+        // Cool riding pose on vehicle
+        leftLeg.rotation.x = 0.15;
+        rightLeg.rotation.x = -0.15;
+        leftArm.rotation.z = 0.25;
+        rightArm.rotation.z = -0.25;
+        bodyGroup.position.y = (rideHeight || 0) + Math.sin(time * 8) * 0.04;
+      }
+    } else if (currentEmote.type !== 'none' && currentEmote.timer > 0) {
+      currentEmote.timer--;
+      applyEmoteAnimation(playerGroup, currentEmote.type, time);
+      if (currentEmote.timer === 0) currentEmote.type = 'none';
     } else {
-      const { leftLeg, rightLeg, leftArm, rightArm } = playerGroup.userData;
+      const { bodyGroup, leftLeg, rightLeg, leftArm, rightArm, rideHeight } = playerGroup.userData;
+      bodyGroup.rotation.set(0, 0, 0);
+      bodyGroup.position.y = rideHeight || 0;
       leftLeg.rotation.x *= 0.8;
       rightLeg.rotation.x *= 0.8;
       leftArm.rotation.x *= 0.8;
       rightArm.rotation.x *= 0.8;
+      leftArm.rotation.z *= 0.8;
+      rightArm.rotation.z *= 0.8;
     }
 
     // Gravity & Jump
@@ -2144,7 +2583,7 @@ function animateWorld() {
       selfChatTimer--;
       if (selfChatTimer === 0) selfChatText = '';
     }
-    const selfHead = playerGroup.position.clone().add(new THREE.Vector3(0, 3.0, 0));
+    const selfHead = playerGroup.position.clone().add(new THREE.Vector3(0, 3.1, 0));
     selfHead.project(camera);
     if (selfHead.z < 1 && isPlayingInWorld()) {
       const sx = (selfHead.x * 0.5 + 0.5) * window.innerWidth;
@@ -2188,7 +2627,7 @@ function animateWorld() {
 }
 
 /* ==========================================================================
-   15. BOOTSTRAP ON PAGE LOAD
+   17. BOOTSTRAP ON PAGE LOAD
    ========================================================================== */
 window.addEventListener('DOMContentLoaded', () => {
   loadSaveData();
@@ -2196,7 +2635,8 @@ window.addEventListener('DOMContentLoaded', () => {
     document.getElementById('input-name').value = gameState.player.name;
     document.getElementById('input-no').value = gameState.player.no;
   }
-  init3DWorld();
+  updateVehicleButtonUI();
   initMultiplayerServer();
+  init3DWorld();
   loadMissionInWorld(1);
 });
