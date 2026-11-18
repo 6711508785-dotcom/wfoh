@@ -30,7 +30,6 @@ const SoundEngine = {
   },
   startBGM() {
     if (this.bgmInterval) return;
-    // Cheerful Detective Adventure Melody Loop
     const notes = [
       261.63, 329.63, 392.00, 329.63,
       293.66, 349.23, 440.00, 349.23,
@@ -93,10 +92,11 @@ function showToast(msg, isError = false) {
    ========================================================================== */
 const APPEARANCE_OPTIONS = {
   vehicles: [
-    { id: 'none', label: '🚶 เดินเท้าปกติ', speedMult: 1.0 },
-    { id: 'skateboard', label: '🛹 สเก็ตบอร์ดสายฟ้า', speedMult: 1.45 },
-    { id: 'scooter', label: '🛴 สกู๊ตเตอร์ไฟฟ้า', speedMult: 1.6 },
-    { id: 'hoverboard', label: '🛸 โฮเวอร์บอร์ดลอยได้', speedMult: 1.75 }
+    { id: 'none', icon: '🚶', label: 'เดินเท้าปกติ', desc: 'ความเร็วมาตรฐาน 1.0x', speedMult: 1.0 },
+    { id: 'skateboard', icon: '🛹', label: 'สเก็ตบอร์ดสายฟ้า', desc: 'คล่องตัว ความเร็ว 1.45x', speedMult: 1.45 },
+    { id: 'scooter', icon: '🛴', label: 'สกู๊ตเตอร์ไฟฟ้า', desc: 'ขับง่าย ความเร็ว 1.6x', speedMult: 1.6 },
+    { id: 'hoverboard', icon: '🛸', label: 'โฮเวอร์บอร์ดลอยได้', desc: 'ลอยเหนือพื้น ความเร็ว 1.75x', speedMult: 1.75 },
+    { id: 'gokart', icon: '🏎️', label: 'รถโกคาร์ทนักสืบ', desc: 'ซิ่งทั่วโรงเรียน ความเร็ว 1.9x', speedMult: 1.9 }
   ],
   skinTones: [
     { id: 's1', color: '#fde0c3', label: 'ผิวขาวอมชมพู' },
@@ -545,8 +545,8 @@ const MISSIONS = [
 /* ==========================================================================
    4. PLAYER STATE, SHARED SERVER SYNC & LEADERBOARD
    ========================================================================== */
-const STORAGE_KEY = '5w1h_detective_save_v4';
-const SERVER_CHANNEL_NAME = '5w1h_school_shared_server_v2';
+const STORAGE_KEY = '5w1h_detective_save_v5';
+const SERVER_CHANNEL_NAME = '5w1h_school_shared_server_v3';
 
 let gameState = {
   player: {
@@ -573,7 +573,7 @@ let gameState = {
 
 let onlinePlayers = {};
 let serverChannel = null;
-let currentEmote = { type: 'none', timer: 0 };
+let currentEmote = { type: 'none', endTime: 0 };
 
 function loadSaveData() {
   try {
@@ -648,21 +648,21 @@ const CLASSMATE_BOTS = [
     id: 'bot_1',
     name: 'ด.ญ. พลอยใส',
     no: 'เลขที่ 4 ม.2/1',
-    appearance: { vehicle: 'skateboard', skin: '#fde0c3', hairStyle: 'twintails_long', hairColor: '#ec4899', outfit: 'student_blue', glasses: 'round', hat: 'cat_ears' },
+    appearance: { vehicle: 'skateboard', skin: '#fde0c3', hairStyle: 'pigtails', hairColor: '#ec4899', outfit: 'student_blue', glasses: 'round', hat: 'cat_ears' },
     scores: { 1: 620, 2: 515, 3: 410 },
     x: -12, y: 0, z: 6, rotY: 0.5,
     waypoints: [{ x: -12, z: 6 }, { x: -24, z: 12 }, { x: -18, z: 18 }, { x: -5, z: 8 }],
-    wpIdx: 0, chat: 'ตอบไวได้โบนัส +5 ด้วยนะ!'
+    wpIdx: 0, chat: 'ทรงผมแกละสองข้างน่ารักมาก!'
   },
   {
     id: 'bot_2',
     name: 'ด.ช. ภูผา',
     no: 'เลขที่ 9 ม.2/1',
-    appearance: { vehicle: 'hoverboard', skin: '#e0ac69', hairStyle: 'spiky', hairColor: '#ef4444', outfit: 'pe_red', glasses: 'cool', hat: 'crown' },
+    appearance: { vehicle: 'gokart', skin: '#e0ac69', hairStyle: 'spiky', hairColor: '#ef4444', outfit: 'pe_red', glasses: 'cool', hat: 'crown' },
     scores: { 1: 510, 2: 625, 3: 320 },
     x: 15, y: 0, z: 8, rotY: -0.8,
     waypoints: [{ x: 15, z: 8 }, { x: 24, z: 15 }, { x: 28, z: 20 }, { x: 12, z: 12 }],
-    wpIdx: 0, chat: 'ดูแท่นรางวัลกลางลานเสาธงสิ!'
+    wpIdx: 0, chat: 'รถโกคาร์ทซิ่งสุดๆ ไปเลย!'
   },
   {
     id: 'bot_3',
@@ -672,7 +672,7 @@ const CLASSMATE_BOTS = [
     scores: { 1: 415, 2: 420, 3: 615 },
     x: 2, y: 0, z: -15, rotY: 3.1,
     waypoints: [{ x: 2, z: -15 }, { x: -4, z: -26 }, { x: 8, z: -26 }, { x: 0, z: -12 }],
-    wpIdx: 0, chat: 'ชุดไดโนเสาร์ขี่สกู๊ตเตอร์อย่างซิ่ง!'
+    wpIdx: 0, chat: 'มาดูท่อระบายน้ำสนามกีฬาเร็ว!'
   }
 ];
 
@@ -769,7 +769,7 @@ function sendChatMessage() {
 }
 
 /* ==========================================================================
-   6. THREE.JS 3D CHARACTER, VEHICLES, HAIRSTYLES & HEADGEAR BUILDER
+   6. THREE.JS 3D CHARACTER, VEHICLES, HAIRSTYLES (FIXED PIGTAILS!) & HEADGEAR
    ========================================================================== */
 function buildDetectiveCharacterMesh(appearance) {
   const app = { ...DEFAULT_APPEARANCE, ...(appearance || {}) };
@@ -830,6 +830,27 @@ function buildDetectiveCharacterMesh(appearance) {
     glowRing.rotation.x = Math.PI / 2;
     glowRing.position.y = 0.16;
     root.add(disc, glowRing);
+  } else if (app.vehicle === 'gokart') {
+    rideHeight = 0.25;
+    const chassis = new THREE.Mesh(
+      new THREE.BoxGeometry(1.15, 0.32, 1.9),
+      new THREE.MeshStandardMaterial({ color: 0xef4444, roughness: 0.35 })
+    );
+    chassis.position.y = 0.26;
+    chassis.castShadow = true;
+    const bumper = new THREE.Mesh(
+      new THREE.BoxGeometry(1.22, 0.16, 0.25),
+      new THREE.MeshStandardMaterial({ color: 0xfacc15 })
+    );
+    bumper.position.set(0, 0.22, 0.95);
+    const wheelMat = new THREE.MeshStandardMaterial({ color: 0x0f172a });
+    [[-0.62, 0.6], [0.62, 0.6], [-0.62, -0.6], [0.62, -0.6]].forEach(([wx, wz]) => {
+      const w = new THREE.Mesh(new THREE.CylinderGeometry(0.22, 0.22, 0.18, 12), wheelMat);
+      w.rotation.z = Math.PI / 2;
+      w.position.set(wx, 0.22, wz);
+      root.add(w);
+    });
+    root.add(chassis, bumper);
   }
 
   bodyGroup.position.y = rideHeight;
@@ -977,7 +998,7 @@ function buildDetectiveCharacterMesh(appearance) {
   rightEye.position.set(0.17, 0.06, 0.38);
   headGroup.add(leftEye, rightEye);
 
-  // Hairstyles (14 Stylish Options!)
+  // Hairstyles (14 Stylish Options + Fixed Cute Pigtails!)
   const hairGroup = new THREE.Group();
   const topHair = new THREE.Mesh(new THREE.BoxGeometry(0.82, 0.24, 0.82), hairMat);
   topHair.position.y = 0.36;
@@ -1008,13 +1029,28 @@ function buildDetectiveCharacterMesh(appearance) {
     afroMain.position.set(0, 0.32, -0.06);
     hairGroup.add(afroMain);
   } else if (app.hairStyle === 'pigtails') {
-    const pigL = new THREE.Mesh(new THREE.ConeGeometry(0.18, 0.75, 7), hairMat);
-    pigL.position.set(-0.52, 0.05, -0.1);
-    pigL.rotation.z = 0.32;
-    const pigR = new THREE.Mesh(new THREE.ConeGeometry(0.18, 0.75, 7), hairMat);
-    pigR.position.set(0.52, 0.05, -0.1);
-    pigR.rotation.z = -0.32;
-    hairGroup.add(pigL, pigR);
+    // Fixed Cute Fluffy Pigtails with Hair Ties & Bangs
+    const frontBangs = new THREE.Mesh(new THREE.BoxGeometry(0.76, 0.15, 0.12), hairMat);
+    frontBangs.position.set(0, 0.28, 0.38);
+    hairGroup.add(frontBangs);
+
+    const tieMat = new THREE.MeshStandardMaterial({ color: 0xf43f5e, roughness: 0.4 });
+    [-1, 1].forEach(side => {
+      // Hair tie ring on side of head
+      const tie = new THREE.Mesh(new THREE.TorusGeometry(0.1, 0.045, 8, 14), tieMat);
+      tie.position.set(side * 0.44, 0.22, -0.05);
+      tie.rotation.y = Math.PI / 2;
+
+      // Fluffy upper puff
+      const puffTop = new THREE.Mesh(new THREE.SphereGeometry(0.22, 12, 12), hairMat);
+      puffTop.position.set(side * 0.56, 0.14, -0.08);
+
+      // Fluffy lower puff
+      const puffBottom = new THREE.Mesh(new THREE.SphereGeometry(0.18, 12, 12), hairMat);
+      puffBottom.position.set(side * 0.64, -0.1, -0.1);
+
+      hairGroup.add(tie, puffTop, puffBottom);
+    });
   } else if (app.hairStyle === 'mohawk') {
     for (let z = -0.25; z <= 0.25; z += 0.16) {
       const fin = new THREE.Mesh(new THREE.BoxGeometry(0.14, 0.44, 0.14), hairMat);
@@ -1158,7 +1194,7 @@ function buildDetectiveCharacterMesh(appearance) {
 }
 
 /* ==========================================================================
-   7. DRESSING ROOM & VEHICLES 3D PREVIEW ENGINE
+   7. DRESSING ROOM & DEDICATED VEHICLE GARAGE MODAL
    ========================================================================== */
 let previewScene, previewCamera, previewRenderer, previewCharMesh;
 let isPreviewDragging = false, prevPreviewX = 0, previewRotY = 0.3;
@@ -1222,7 +1258,7 @@ function renderWardrobeUI() {
   const app = gameState.player.appearance;
 
   document.getElementById('opt-vehicle').innerHTML = APPEARANCE_OPTIONS.vehicles.map(v => `
-    <div class="opt-chip ${app.vehicle === v.id ? 'active' : ''}" onclick="setAppearanceProp('vehicle','${v.id}')">${v.label}</div>
+    <div class="opt-chip ${app.vehicle === v.id ? 'active' : ''}" onclick="setAppearanceProp('vehicle','${v.id}')">${v.icon} ${v.label}</div>
   `).join('');
 
   document.getElementById('opt-skin').innerHTML = APPEARANCE_OPTIONS.skinTones.map(s => `
@@ -1256,6 +1292,7 @@ function setAppearanceProp(key, val) {
   gameState.player.appearance[key] = val;
   SoundEngine.playTone(620, 'sine', 0.08, 0.1);
   renderWardrobeUI();
+  updateVehicleButtonUI();
 }
 
 function randomizeAppearance() {
@@ -1271,24 +1308,64 @@ function randomizeAppearance() {
   };
   SoundEngine.collect();
   renderWardrobeUI();
+  updateVehicleButtonUI();
+}
+
+/* Dedicated Vehicle Garage Modal Functions */
+let returnScreenFromVehicle = 'screen-home';
+
+function openVehicleModal() {
+  SoundEngine.init();
+  const active = document.querySelector('.screen-overlay:not(.hidden)');
+  returnScreenFromVehicle = active ? active.id : 'HUD';
+  renderVehicleGarageUI();
+  showScreen('screen-vehicle');
+}
+
+function renderVehicleGarageUI() {
+  const currentV = gameState.player.appearance.vehicle;
+  const grid = document.getElementById('vehicle-garage-grid');
+  grid.innerHTML = APPEARANCE_OPTIONS.vehicles.map(v => `
+    <div class="vehicle-card ${currentV === v.id ? 'selected' : ''}" onclick="selectVehicleFromGarage('${v.id}')">
+      <div style="font-size: 42px; margin-bottom: 6px;">${v.icon}</div>
+      <div style="font-size: 15px; font-weight: 700; color: #f8fafc; margin-bottom: 4px;">${v.label}</div>
+      <div style="font-size: 12.5px; color: #34d399; font-weight: 600;">${v.desc}</div>
+      ${currentV === v.id ? '<div style="margin-top:8px; font-size:12px; color:#fbbf24; font-weight:700;">✅ กำลังใช้งาน</div>' : ''}
+    </div>
+  `).join('');
+}
+
+function selectVehicleFromGarage(vehicleId) {
+  gameState.player.appearance.vehicle = vehicleId;
+  saveProgress();
+  rebuildSelfPlayerMesh();
+  updateVehicleButtonUI();
+  renderVehicleGarageUI();
+  SoundEngine.collect();
+  const v = APPEARANCE_OPTIONS.vehicles.find(item => item.id === vehicleId);
+  showToast(`เลือกยานพาหนะ: ${v.icon} ${v.label}`);
+}
+
+function closeVehicleModal() {
+  if (returnScreenFromVehicle === 'HUD') {
+    hideAllScreens();
+    document.getElementById('hud').style.display = 'block';
+  } else {
+    showScreen(returnScreenFromVehicle);
+  }
 }
 
 function cycleVehicle() {
   const list = APPEARANCE_OPTIONS.vehicles;
   const idx = list.findIndex(v => v.id === gameState.player.appearance.vehicle);
   const next = list[(idx + 1) % list.length];
-  gameState.player.appearance.vehicle = next.id;
-  saveProgress();
-  rebuildSelfPlayerMesh();
-  updateVehicleButtonUI();
-  SoundEngine.collect();
-  showToast(`เปลี่ยนยานพาหนะ: ${next.label}`);
+  selectVehicleFromGarage(next.id);
 }
 
 function updateVehicleButtonUI() {
   const v = APPEARANCE_OPTIONS.vehicles.find(item => item.id === gameState.player.appearance.vehicle) || APPEARANCE_OPTIONS.vehicles[0];
   const btn = document.getElementById('btn-vehicle');
-  if (btn) btn.textContent = v.label;
+  if (btn) btn.textContent = `${v.icon} ${v.label}`;
 }
 
 let returnScreenFromWardrobe = 'screen-home';
@@ -1369,11 +1446,10 @@ function renderPodiumModalStage(ranked) {
     podiumGroup.remove(podiumGroup.children[0]);
   }
 
-  // Podium Blocks: Rank 2 (Left), Rank 1 (Center), Rank 3 (Right)
   const slots = [
-    { rank: 1, x: 0, h: 1.7, color: 0xfacc15, label: '🥇 อันดับ 1' },
-    { rank: 2, x: -2.4, h: 1.2, color: 0xe2e8f0, label: '🥈 อันดับ 2' },
-    { rank: 3, x: 2.4, h: 0.85, color: 0xd97706, label: '🥉 อันดับ 3' }
+    { rank: 1, x: 0, h: 1.7, color: 0xfacc15 },
+    { rank: 2, x: -2.4, h: 1.2, color: 0xe2e8f0 },
+    { rank: 3, x: 2.4, h: 0.85, color: 0xd97706 }
   ];
 
   slots.forEach(s => {
@@ -1386,7 +1462,7 @@ function renderPodiumModalStage(ranked) {
 
     const player = ranked[s.rank - 1];
     if (player) {
-      const charMesh = buildDetectiveCharacterMesh(player.appearance);
+      const charMesh = buildDetectiveCharacterMesh({ ...player.appearance, vehicle: 'none' });
       charMesh.scale.set(0.78, 0.78, 0.78);
       charMesh.position.set(s.x, s.h, 0);
       charMesh.userData = { isChamp: true, baseY: s.h, phase: s.rank };
@@ -1394,7 +1470,6 @@ function renderPodiumModalStage(ranked) {
     }
   });
 
-  // Top 3 Cards below canvas
   const cardsEl = document.getElementById('podium-top3-cards');
   cardsEl.innerHTML = [2, 1, 3].map(r => {
     const p = ranked[r - 1];
@@ -1540,12 +1615,10 @@ function buildSchoolEnvironment() {
   ground.receiveShadow = true;
   scene.add(ground);
 
-  // Central Plaza & Walkways
   createBox(26, 0.08, 26, 0xe2e8f0, 0, 0.04, 14, false, true);
   createBox(58, 0.08, 6, 0xcbd5e1, 0, 0.04, 14, false, true);
   createBox(6, 0.08, 46, 0xcbd5e1, 0, 0.04, -5, false, true);
 
-  // Flagpole in Central Plaza
   createBox(2.8, 0.5, 2.8, 0x94a3b8, 0, 0.25, 14);
   const pole = new THREE.Mesh(
     new THREE.CylinderGeometry(0.1, 0.14, 11, 12),
@@ -1555,7 +1628,6 @@ function buildSchoolEnvironment() {
   pole.castShadow = true;
   scene.add(pole);
 
-  // Thai Flag
   createBox(1.8, 0.2, 0.08, 0xef4444, 0.95, 10.3, 14);
   createBox(1.8, 0.2, 0.08, 0xffffff, 0.95, 10.1, 14);
   createBox(1.8, 0.4, 0.08, 0x1e3a8a, 0.95, 9.8, 14);
@@ -1564,7 +1636,7 @@ function buildSchoolEnvironment() {
 
   registerWorldLabel('🏆 แท่นรางวัลนักเรียนดีเด่น 5W1H', 0, 5.2, 6);
 
-  // 1. ACADEMIC BUILDING & CLASSROOM ม.2/1
+  // Academic Building
   createBox(16, 0.2, 16, 0xfef3c7, -28, 0.1, 16, false, true);
   createBox(16, 5.5, 0.6, 0xfbbf24, -28, 2.75, 23.7);
   createBox(0.6, 5.5, 16, 0xfbbf24, -35.7, 2.75, 16);
@@ -1584,7 +1656,7 @@ function buildSchoolEnvironment() {
   }
   registerWorldLabel('🏫 อาคารเรียน • ห้อง ม.2/1', -28, 7.2, 16);
 
-  // 2. CANTEEN / โรงอาหาร
+  // Canteen
   createBox(16, 0.2, 16, 0xf1f5f9, 28, 0.1, 16, false, true);
   createBox(17.5, 0.7, 17.5, 0x0284c7, 28, 5.6, 16);
   [21, 35].forEach(px => {
@@ -1604,7 +1676,7 @@ function buildSchoolEnvironment() {
   createBox(0.9, 1.1, 0.9, 0x2563eb, 23.2, 0.55, 17);
   registerWorldLabel('🍜 โรงอาหาร (Canteen)', 28, 7.0, 16);
 
-  // 3. SPORTS FIELD / สนามกีฬา
+  // Sports Field
   createBox(32, 0.1, 22, 0x16a34a, 0, 0.05, -28, false, true);
   createBox(32, 0.12, 0.3, 0xffffff, 0, 0.06, -17.2, false, false);
   createBox(32, 0.12, 0.3, 0xffffff, 0, 0.06, -38.8, false, false);
@@ -1628,14 +1700,14 @@ function buildSchoolEnvironment() {
   createBox(1.6, 0.18, 1.6, 0x475569, 10, 0.09, -26);
   registerWorldLabel('⚽ สนามกีฬา (Sports Field)', 0, 5.5, -28);
 
-  // 4. LIBRARY / ห้องสมุด
+  // Library
   createBox(18, 5.5, 12, 0xa855f7, 0, 2.75, 36);
   createBox(19.5, 0.8, 13.5, 0x6b21a8, 0, 5.8, 36);
   createBox(3.2, 3.2, 0.3, 0xfef08a, 0, 1.6, 29.9);
   addCollider(-9.2, 9.2, 29.8, 42.2);
   registerWorldLabel('📚 ห้องสมุดโรงเรียน (Library)', 0, 7.2, 36);
 
-  // Decorative Trees
+  // Trees
   const treePositions = [
     [-14, 4], [14, 4], [-14, 26], [14, 26],
     [-22, -14], [22, -14], [-22, -36], [22, -36]
@@ -1652,7 +1724,6 @@ function buildSchoolEnvironment() {
     addCollider(tx - 0.6, tx + 0.6, tz - 0.6, tz + 0.6);
   });
 
-  // Static NPC Teachers
   createWorldNPC(0xef4444, -22, 13, 0);
   createWorldNPC(0x10b981, 31, 13, -1.5);
   createWorldNPC(0x2563eb, -10, -23, 0.8);
@@ -1724,49 +1795,74 @@ function rebuildSelfPlayerMesh() {
 }
 
 /* ==========================================================================
-   10. EMOTES SYSTEM
+   10. EMOTES SYSTEM (FIXED REAL-TIME DURATION & EXPRESSIVE POSES)
    ========================================================================== */
 function triggerEmote(type) {
   SoundEngine.init();
-  currentEmote = { type, timer: 160 };
+  currentEmote = { type, endTime: performance.now() + 4500 }; // Active for 4.5 seconds!
   SoundEngine.playTone(540, 'sine', 0.12, 0.14);
   broadcastPlayerState();
+
+  // Highlight active button
+  document.querySelectorAll('.emote-btn').forEach(btn => {
+    btn.classList.toggle('active-emote', btn.dataset.emote === type);
+  });
+
   const labels = {
-    dance: '💃 กำลังเต้นฉลอง!',
+    dance: '💃 กำลังเต้นฉลองสุดเหวี่ยง!',
     wave: '👋 โบกมือทักทายเพื่อนๆ',
     think: '🤔 กำลังครุ่นคิดวิเคราะห์เบาะแส',
+    spin: '🌀 หมุนตัวโชว์ความเท่!',
     faint: '🤣 ล้มตัวนอนแผ่สุดฮา!'
   };
   showToast(labels[type] || 'แสดงท่าทาง!');
 }
 
+function clearEmoteUI() {
+  document.querySelectorAll('.emote-btn').forEach(btn => btn.classList.remove('active-emote'));
+}
+
 function applyEmoteAnimation(charMesh, emoteType, time) {
-  const { bodyGroup, leftArm, rightArm, leftLeg, rightLeg } = charMesh.userData;
+  const { bodyGroup, leftArm, rightArm, leftLeg, rightLeg, headGroup, rideHeight } = charMesh.userData;
   if (!bodyGroup) return;
 
-  // Reset transforms
   bodyGroup.rotation.set(0, 0, 0);
-  bodyGroup.position.y = charMesh.userData.rideHeight || 0;
+  bodyGroup.position.y = rideHeight || 0;
+  leftArm.rotation.set(0, 0, 0);
+  rightArm.rotation.set(0, 0, 0);
+  leftLeg.rotation.set(0, 0, 0);
+  rightLeg.rotation.set(0, 0, 0);
+  if (headGroup) headGroup.rotation.set(0, 0, 0);
 
   if (emoteType === 'dance') {
-    bodyGroup.position.y += Math.abs(Math.sin(time * 10)) * 0.25;
-    bodyGroup.rotation.y = Math.sin(time * 6) * 0.4;
-    leftArm.rotation.z = Math.sin(time * 10) * 0.8 + 0.8;
-    rightArm.rotation.z = -Math.sin(time * 10) * 0.8 - 0.8;
+    bodyGroup.position.y += Math.abs(Math.sin(time * 9)) * 0.32;
+    bodyGroup.rotation.y = Math.sin(time * 5) * 0.55;
+    leftArm.rotation.z = Math.sin(time * 9) * 0.9 + 1.4;
+    rightArm.rotation.z = -Math.sin(time * 9) * 0.9 - 1.4;
+    leftLeg.rotation.x = Math.sin(time * 9) * 0.4;
+    rightLeg.rotation.x = -Math.sin(time * 9) * 0.4;
   } else if (emoteType === 'wave') {
-    rightArm.rotation.z = 2.6 + Math.sin(time * 14) * 0.45;
-    leftArm.rotation.z = 0;
+    rightArm.rotation.z = 2.7 + Math.sin(time * 12) * 0.45;
+    leftArm.rotation.z = 0.15;
+    if (headGroup) headGroup.rotation.z = Math.sin(time * 6) * 0.12;
   } else if (emoteType === 'think') {
-    rightArm.rotation.x = -1.9;
-    rightArm.rotation.z = -0.35;
-    bodyGroup.rotation.x = 0.08;
+    rightArm.rotation.x = -2.1;
+    rightArm.rotation.z = -0.45;
+    leftArm.rotation.x = -0.4;
+    bodyGroup.rotation.x = 0.12;
+    if (headGroup) headGroup.rotation.y = Math.sin(time * 2.5) * 0.25;
+  } else if (emoteType === 'spin') {
+    bodyGroup.rotation.y = time * 8;
+    bodyGroup.position.y += 0.18 + Math.sin(time * 6) * 0.08;
+    leftArm.rotation.z = 1.3;
+    rightArm.rotation.z = -1.3;
   } else if (emoteType === 'faint') {
     bodyGroup.rotation.x = -Math.PI / 2;
-    bodyGroup.position.y = 0.42;
-    leftArm.rotation.z = 0.6;
-    rightArm.rotation.z = -0.6;
-    leftLeg.rotation.z = 0.2;
-    rightLeg.rotation.z = -0.2;
+    bodyGroup.position.y = (rideHeight || 0) + 0.42;
+    leftArm.rotation.z = 0.7;
+    rightArm.rotation.z = -0.7;
+    leftLeg.rotation.z = 0.25;
+    rightLeg.rotation.z = -0.25;
   }
 }
 
@@ -2214,9 +2310,15 @@ function resetLocalPlayer() {
 function setupControls() {
   window.addEventListener('keydown', e => {
     keys[e.code] = true;
-    if (e.code === 'Space' && isPlayingInWorld()) jumpPlayer();
-    if (e.code === 'KeyE' && isPlayingInWorld()) triggerInteract();
-    if (e.code === 'KeyV' && isPlayingInWorld()) cycleVehicle();
+    if (!isPlayingInWorld()) return;
+    if (e.code === 'Space') jumpPlayer();
+    if (e.code === 'KeyE') triggerInteract();
+    if (e.code === 'KeyV') openVehicleModal();
+    if (e.code === 'Digit1') triggerEmote('dance');
+    if (e.code === 'Digit2') triggerEmote('wave');
+    if (e.code === 'Digit3') triggerEmote('think');
+    if (e.code === 'Digit4') triggerEmote('spin');
+    if (e.code === 'Digit5') triggerEmote('faint');
   });
   window.addEventListener('keyup', e => { keys[e.code] = false; });
 
@@ -2403,240 +2505,4 @@ function updateRemotePlayersAndBots(dt, time) {
     } else {
       entry.walkPhase += dt * 8;
       const { bodyGroup, leftLeg, rightLeg, leftArm, rightArm } = entry.mesh.userData;
-      bodyGroup.rotation.set(0, 0, 0);
-      bodyGroup.position.y = entry.mesh.userData.rideHeight || 0;
-      if (p.appearance.vehicle === 'none') {
-        leftLeg.rotation.x = Math.sin(entry.walkPhase) * 0.45;
-        rightLeg.rotation.x = -Math.sin(entry.walkPhase) * 0.45;
-        leftArm.rotation.x = -Math.sin(entry.walkPhase) * 0.35;
-        rightArm.rotation.x = Math.sin(entry.walkPhase) * 0.35;
-      } else {
-        leftLeg.rotation.x = 0; rightLeg.rotation.x = 0;
-      }
-    }
-
-    const headPos = entry.mesh.position.clone().add(new THREE.Vector3(0, 3.05, 0));
-    headPos.project(camera);
-    if (headPos.z < 1) {
-      const sx = (headPos.x * 0.5 + 0.5) * window.innerWidth;
-      const sy = (-headPos.y * 0.5 + 0.5) * window.innerHeight;
-      entry.labelEl.style.left = `${sx}px`;
-      entry.labelEl.style.top = `${sy}px`;
-      entry.labelEl.style.display = 'flex';
-      const chatHtml = p.chat ? `<div class="chat-bubble-3d">${p.chat}</div>` : '';
-      entry.labelEl.innerHTML = `${chatHtml}<div class="name-tag-3d">${p.name} • ⭐${getTotalScore(p)}</div>`;
-    } else {
-      entry.labelEl.style.display = 'none';
-    }
-  });
-}
-
-/* ==========================================================================
-   16. MAIN ANIMATION LOOP
-   ========================================================================== */
-const clock = new THREE.Clock();
-
-function animateWorld() {
-  requestAnimationFrame(animateWorld);
-  const dt = Math.min(clock.getDelta(), 0.05);
-  const time = clock.getElapsedTime();
-
-  // Animate Evidence Orbs
-  evidenceMeshes.forEach((item, idx) => {
-    if (!item.collected) {
-      item.orb.rotation.y += dt * 2.2;
-      item.orb.position.y = Math.sin(time * 3 + idx) * 0.22;
-    }
-  });
-
-  // Animate World Podium Champions
-  if (worldPodiumGroup) {
-    worldPodiumGroup.children.forEach(child => {
-      if (child.userData.isPodiumChamp) {
-        child.position.y = child.userData.baseY + Math.abs(Math.sin(time * 4 + child.userData.rank)) * 0.16;
-        child.rotation.y = Math.sin(time * 2 + child.userData.rank) * 0.35;
-      }
-    });
-  }
-
-  // Update Remote Players & Classmates
-  updateRemotePlayersAndBots(dt, time);
-
-  // Player Movement
-  if (playerGroup && isPlayingInWorld()) {
-    let moveForward = 0;
-    let moveRight = 0;
-
-    if (keys['KeyW'] || keys['ArrowUp']) moveForward += 1;
-    if (keys['KeyS'] || keys['ArrowDown']) moveForward -= 1;
-    if (keys['KeyD'] || keys['ArrowRight']) moveRight += 1;
-    if (keys['KeyA'] || keys['ArrowLeft']) moveRight -= 1;
-
-    if (Math.abs(joyVec.x) > 0.08 || Math.abs(joyVec.y) > 0.08) {
-      moveRight += joyVec.x;
-      moveForward -= joyVec.y;
-    }
-
-    const vObj = APPEARANCE_OPTIONS.vehicles.find(v => v.id === gameState.player.appearance.vehicle) || APPEARANCE_OPTIONS.vehicles[0];
-    const currentSpeed = playerState.baseSpeed * vObj.speedMult;
-
-    const len = Math.hypot(moveForward, moveRight);
-    if (len > 0.01) {
-      currentEmote = { type: 'none', timer: 0 };
-      moveForward /= Math.max(1, len);
-      moveRight /= Math.max(1, len);
-
-      const sinY = Math.sin(camYaw);
-      const cosY = Math.cos(camYaw);
-      const worldX = moveRight * cosY - moveForward * sinY;
-      const worldZ = -moveRight * sinY - moveForward * cosY;
-
-      const stepX = worldX * currentSpeed * dt;
-      const stepZ = worldZ * currentSpeed * dt;
-
-      if (!checkCollision(playerGroup.position.x + stepX, playerGroup.position.z)) {
-        playerGroup.position.x += stepX;
-      }
-      if (!checkCollision(playerGroup.position.x, playerGroup.position.z + stepZ)) {
-        playerGroup.position.z += stepZ;
-      }
-
-      const targetAngle = Math.atan2(worldX, worldZ);
-      let diff = targetAngle - playerGroup.rotation.y;
-      while (diff < -Math.PI) diff += Math.PI * 2;
-      while (diff > Math.PI) diff -= Math.PI * 2;
-      playerGroup.rotation.y += diff * 0.22;
-
-      const { bodyGroup, leftLeg, rightLeg, leftArm, rightArm, rideHeight } = playerGroup.userData;
-      bodyGroup.rotation.set(0, 0, 0);
-      bodyGroup.position.y = rideHeight || 0;
-
-      if (gameState.player.appearance.vehicle === 'none') {
-        playerState.walkCycle += dt * 12;
-        leftLeg.rotation.x = Math.sin(playerState.walkCycle) * 0.6;
-        rightLeg.rotation.x = -Math.sin(playerState.walkCycle) * 0.6;
-        leftArm.rotation.x = -Math.sin(playerState.walkCycle) * 0.5;
-        rightArm.rotation.x = Math.sin(playerState.walkCycle) * 0.5;
-      } else {
-        // Cool riding pose on vehicle
-        leftLeg.rotation.x = 0.15;
-        rightLeg.rotation.x = -0.15;
-        leftArm.rotation.z = 0.25;
-        rightArm.rotation.z = -0.25;
-        bodyGroup.position.y = (rideHeight || 0) + Math.sin(time * 8) * 0.04;
-      }
-    } else if (currentEmote.type !== 'none' && currentEmote.timer > 0) {
-      currentEmote.timer--;
-      applyEmoteAnimation(playerGroup, currentEmote.type, time);
-      if (currentEmote.timer === 0) currentEmote.type = 'none';
-    } else {
-      const { bodyGroup, leftLeg, rightLeg, leftArm, rightArm, rideHeight } = playerGroup.userData;
-      bodyGroup.rotation.set(0, 0, 0);
-      bodyGroup.position.y = rideHeight || 0;
-      leftLeg.rotation.x *= 0.8;
-      rightLeg.rotation.x *= 0.8;
-      leftArm.rotation.x *= 0.8;
-      rightArm.rotation.x *= 0.8;
-      leftArm.rotation.z *= 0.8;
-      rightArm.rotation.z *= 0.8;
-    }
-
-    // Gravity & Jump
-    playerState.velY += playerState.gravity * dt;
-    playerGroup.position.y += playerState.velY * dt;
-    if (playerGroup.position.y <= 0) {
-      playerGroup.position.y = 0;
-      playerState.velY = 0;
-      playerState.onGround = true;
-    }
-
-    // Check Proximity to Evidence
-    let closest = null;
-    let closestDist = 3.4;
-    evidenceMeshes.forEach(item => {
-      if (!item.collected) {
-        const d = playerGroup.position.distanceTo(item.group.position);
-        if (d < closestDist) {
-          closestDist = d;
-          closest = item;
-        }
-      }
-    });
-
-    const promptEl = document.getElementById('interact-prompt');
-    if (closest) {
-      activeEvidenceTarget = closest;
-      document.getElementById('interact-label').textContent = `สำรวจ: ${closest.data.title}`;
-      promptEl.style.display = 'flex';
-    } else {
-      activeEvidenceTarget = null;
-      promptEl.style.display = 'none';
-    }
-
-    updateHUD();
-  }
-
-  // Self Nameplate
-  if (playerGroup && gameState.player.name) {
-    ensureSelfNameplate();
-    if (selfChatTimer > 0) {
-      selfChatTimer--;
-      if (selfChatTimer === 0) selfChatText = '';
-    }
-    const selfHead = playerGroup.position.clone().add(new THREE.Vector3(0, 3.1, 0));
-    selfHead.project(camera);
-    if (selfHead.z < 1 && isPlayingInWorld()) {
-      const sx = (selfHead.x * 0.5 + 0.5) * window.innerWidth;
-      const sy = (-selfHead.y * 0.5 + 0.5) * window.innerHeight;
-      selfNameplateEl.style.left = `${sx}px`;
-      selfNameplateEl.style.top = `${sy}px`;
-      selfNameplateEl.style.display = 'flex';
-      const chatHtml = selfChatText ? `<div class="chat-bubble-3d">${selfChatText}</div>` : '';
-      selfNameplateEl.innerHTML = `${chatHtml}<div class="name-tag-3d self">🕵️ ${gameState.player.name}</div>`;
-    } else {
-      selfNameplateEl.style.display = 'none';
-    }
-  }
-
-  // Third-Person Camera Follow
-  if (playerGroup) {
-    const targetPos = playerGroup.position.clone().add(new THREE.Vector3(0, 1.8, 0));
-    const camX = targetPos.x + camDist * Math.sin(camYaw) * Math.cos(camPitch);
-    const camY = targetPos.y + camDist * Math.sin(camPitch);
-    const camZ = targetPos.z + camDist * Math.cos(camYaw) * Math.cos(camPitch);
-
-    camera.position.lerp(new THREE.Vector3(camX, Math.max(1.2, camY), camZ), 0.16);
-    camera.lookAt(targetPos);
-  }
-
-  // Update 3D Building Labels
-  worldLabels.forEach(item => {
-    const projected = item.pos.clone().project(camera);
-    if (projected.z < 1) {
-      const x = (projected.x * 0.5 + 0.5) * window.innerWidth;
-      const y = (-projected.y * 0.5 + 0.5) * window.innerHeight;
-      item.el.style.left = `${x}px`;
-      item.el.style.top = `${y}px`;
-      item.el.style.opacity = '1';
-    } else {
-      item.el.style.opacity = '0';
-    }
-  });
-
-  renderer.render(scene, camera);
-}
-
-/* ==========================================================================
-   17. BOOTSTRAP ON PAGE LOAD
-   ========================================================================== */
-window.addEventListener('DOMContentLoaded', () => {
-  loadSaveData();
-  if (gameState.player.name) {
-    document.getElementById('input-name').value = gameState.player.name;
-    document.getElementById('input-no').value = gameState.player.no;
-  }
-  updateVehicleButtonUI();
-  initMultiplayerServer();
-  init3DWorld();
-  loadMissionInWorld(1);
-});
+      bodyGroup.rotation.set(0,
